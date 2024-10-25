@@ -23,6 +23,8 @@ class ExpansionOverlay extends HTMLElement {
   forceHorizontalAlign = false;
   /** string, Opciones posibles: 'top' | 'bottom' (default). Indica donde se alineará el expansion-overlay en el eje Y, por ejemplo si se alinea 'top' el expansion-overlay se colocará por encima del objeto y la animación de expandirse será de abajo hacia arriba. */
   verticalAlign = 'bottom';
+  /** boolean, Opciones posibles: 'true' | 'false' (default). Indica el expansion-overlay se ubicará forzosamente en el verticalAlign seleccionado (aunque no haya espacio para mostrar correctamente el expansion-overlay). Esta opción ignora la función que cambia el verticalAlign del expansion-overlay si no hay espacio suficiente */
+  forceVerticalAlign = false;
   /** boolean, Opciones posibles: 'true' (default) | 'false'. Indica si el width del expansion-overlay será igual que el width del HTMLElement de expandFromItem */
   inheritParentWidth = true;
   /** string, valores posibles: '350px' | '150em' | '50%' | '200vw'. Indica un width específico para el expansion-overlay (si el parametro inheritParentWidth está 'true' este parametro se ignora). */
@@ -135,7 +137,7 @@ class ExpansionOverlay extends HTMLElement {
    * Ciclo de vida del webcomponent. Es el método que crea el observable, aquí se determina que las propiedades (@Input) que tendra el webcomponent.
    */
   static get observedAttributes() {
-    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'expand-from-item-hide-round-border', 'horizontal-align', 'force-horizontal-align', 'vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height', 'animation-duration', 'show-backdrop'];
+    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'expand-from-item-hide-round-border', 'horizontal-align', 'force-horizontal-align', 'vertical-align', 'force-vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height', 'animation-duration', 'show-backdrop'];
   }
 
   /**
@@ -171,6 +173,11 @@ class ExpansionOverlay extends HTMLElement {
 
     if (name === 'vertical-align') {
       this.verticalAlign = newValue;
+      return;
+    }
+
+    if (name === 'force-vertical-align') {
+      this.forceVerticalAlign = newValue;
       return;
     }
 
@@ -328,7 +335,7 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     const originalElement = this.getComponentToExpand(); // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
-    return originalElement.clientWidth;
+    return originalElement.getBoundingClientRect().width;
   }
 
   getComponentToExpandHeight() {
@@ -338,7 +345,7 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     const originalElement = this.getComponentToExpand(); // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
-    return originalElement.clientHeight;
+    return originalElement.getBoundingClientRect().height;
   }
 
   async manageExpansionOverlay() {
@@ -346,7 +353,7 @@ class ExpansionOverlay extends HTMLElement {
 
     this.createOverlay();
     this.updateHorizontalAlign();
-    this.updateVertialAlign();
+    this.updateVerticalAlign();
   }
 
   createOverlay() {
@@ -473,11 +480,16 @@ class ExpansionOverlay extends HTMLElement {
       return;
     }
 
+    let componentToExpand = this.getComponentToExpand();
+    if (componentToExpand == null) {
+      return;
+    }
+
     // Calculos del expansion-overlay en las diferentes posiciones posibles de horizontalAlign
     const horizontalCalculations = {
       left: expandFromItem.getBoundingClientRect().left,
       right: window.innerWidth - expandFromItem.getBoundingClientRect().right,
-      middle: expandFromItem.getBoundingClientRect().left + ((expandFromItem.clientWidth / 2) - (document.getElementById('overlayContainer').clientWidth / 2))
+      middle: expandFromItem.getBoundingClientRect().left + ((expandFromItem.getBoundingClientRect().width / 2) - (componentToExpand.getBoundingClientRect().width / 2))
     };
 
     let horizontalAlign = this.getAttribute('horizontal-align') ?? this.horizontalAlign;
@@ -508,9 +520,14 @@ class ExpansionOverlay extends HTMLElement {
    * Comprueba si es necesario cambiar el horizontalAlign, debido a que el horizontalAlign seleccionado no deja suficiente espacio para el expansion-overlay
    */
   checkHorizontalAlignAvailability(horizontalAlign, horizontalCalculations) {
+    let componentToExpand = this.getComponentToExpand();
+    if (componentToExpand == null) {
+      return this.horizontalAlign; // Failsafe return, nunca debería llegar a este return
+    }
+
     if (horizontalAlign == 'left') {
       // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
-      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + document.getElementById('overlayContainer').clientWidth) >= 0)) {
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + componentToExpand.getBoundingClientRect().width) >= 0)) {
         return horizontalAlign;
       }
 
@@ -531,7 +548,7 @@ class ExpansionOverlay extends HTMLElement {
 
     if (horizontalAlign == 'right') {
       // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
-      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + document.getElementById('overlayContainer').clientWidth) >= 0)) {
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + componentToExpand.getBoundingClientRect().width) >= 0)) {
         return horizontalAlign;
       }
 
@@ -552,7 +569,7 @@ class ExpansionOverlay extends HTMLElement {
 
     if (horizontalAlign == 'middle') {
       // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
-      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + document.getElementById('overlayContainer').clientWidth) >= 0)) {
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + componentToExpand.getBoundingClientRect().width) >= 0)) {
         return horizontalAlign;
       }
 
@@ -572,26 +589,83 @@ class ExpansionOverlay extends HTMLElement {
     }
   }
 
-  updateVertialAlign() { // TODO - HACER CALCULO, SI ESTÁ A TOP POR EJEMPLO PERO NO HAY ESPACIO, PONERLO EN BOTTOM Y VICEVERSA.
+  updateVerticalAlign() {
     let expandFromItem = this.getExpandFromItem();
     if (expandFromItem == null) {
       return;
     }
 
+    // Calculos del expansion-overlay en las diferentes posiciones posibles de verticalAlign
+    const verticalCalculations = {
+      top: window.innerHeight - expandFromItem.getBoundingClientRect().top,
+      bottom: expandFromItem.getBoundingClientRect().bottom
+    };
+
     const borderRadiusValue = this.updateRoundBorder();
-    const verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
+    let verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
+    const forceVerticalAlign = this.getAttribute('force-vertical-align') ?? this.forceVerticalAlign;
+
+    // Si se fuerza la posición de verticalAlign no se realizarán los cálculos para cambiar el verticalAlign si no hay espacio suficiente
+    if ((typeof forceVerticalAlign == "boolean" && !forceVerticalAlign) || (typeof forceVerticalAlign === 'string' && forceVerticalAlign.toLowerCase() === 'false')) {
+      verticalAlign = this.checkVerticalAlignAvailability(verticalAlign, verticalCalculations);
+    }
+
     // El expansion-overlay sale debajo del componente, la animación de expansión es hacia abajo.
     if (verticalAlign == 'top') {
-      const offsetTop = window.innerHeight - expandFromItem.getBoundingClientRect().top - borderRadiusValue;
-      document.getElementById('overlayContainer').style.bottom = `${offsetTop}px`;
+      document.getElementById('overlayContainer').style.bottom = `${verticalCalculations.top - borderRadiusValue}px`;
       return;
     }
 
     // El expansion-overlay sale arriba del componente, la animación de expansión es hacia arriba.
     if (verticalAlign == 'bottom') {
-      const offsetBottom = expandFromItem.getBoundingClientRect().bottom - borderRadiusValue;
-      document.getElementById('overlayContainer').style.top = `${offsetBottom}px`;
+      document.getElementById('overlayContainer').style.top = `${verticalCalculations.bottom - borderRadiusValue}px`;
       return;
+    }
+  }
+
+  /**
+   * Comprueba si es necesario cambiar el verticalAlign, debido a que el verticalAlign seleccionado no deja suficiente espacio para el expansion-overlay
+   */
+  checkVerticalAlignAvailability(verticalAlign, verticalCalculations) {
+    let componentToExpand = this.getComponentToExpand();
+    if (componentToExpand == null) {
+      return this.verticalAlign; // Failsafe return, nunca debería llegar a este return
+    }
+
+    if (verticalAlign == 'top') {
+      // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
+      if (verticalCalculations[verticalAlign] >= 0 && (window.innerHeight - (verticalCalculations[verticalAlign] + componentToExpand.getBoundingClientRect().height) >= 0)) {
+        return verticalAlign;
+      }
+
+      // Comprueba que verticalAlign tiene más espacio disponible
+      const minCalculation = Math.min(Math.abs(verticalCalculations.top), Math.abs(verticalCalculations.bottom));
+      if (minCalculation === Math.abs(verticalCalculations.top)) {
+        return 'top';
+      }
+      if (minCalculation === Math.abs(verticalCalculations.bottom)) {
+        return 'bottom';
+      }
+
+      return 'top'; // Failsafe return, nunca debería llegar a este return
+    }
+
+    if (verticalAlign == 'bottom') {
+      // Si el overlayContainer está en bottom: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en bottom: 350px, pero el overlayContainer tiene un height de >50px, se sale de la pantalla.
+      if (verticalCalculations[verticalAlign] >= 0 && (window.innerHeight - (verticalCalculations[verticalAlign] + componentToExpand.getBoundingClientRect().height) >= 0)) {
+        return verticalAlign;
+      }
+
+      // Comprueba que verticalAlign tiene más espacio disponible
+      const minCalculation = Math.min(Math.abs(verticalCalculations.top), Math.abs(verticalCalculations.bottom));
+      if (minCalculation === Math.abs(verticalCalculations.top)) {
+        return 'top';
+      }
+      if (minCalculation === Math.abs(verticalCalculations.bottom)) {
+        return 'bottom';
+      }
+
+      return 'bottom'; // Failsafe return, nunca debería llegar a este return
     }
   }
 }
