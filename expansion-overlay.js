@@ -19,6 +19,8 @@ class ExpansionOverlay extends HTMLElement {
   expandFromItemHideRoundBorder = false;
   /** string, Opciones posibles: 'left' (default) | 'middle' | 'right'. Indica donde se alineará el expansion-overlay en el eje X, por ejemplo si se alinea 'left' el expansion-overlay se pegará a la izquierda y si necesita más espacio crecerá hacia la derecha. */
   horizontalAlign = 'left';
+  /** boolean, Opciones posibles: 'true' | 'false' (default). Indica el expansion-overlay se ubicará forzosamente en el horizontalAlign seleccionado (aunque no haya espacio para mostrar correctamente el expansion-overlay). Esta opción ignora la función que cambia el horizontalAlign del expansion-overlay si no hay espacio suficiente */
+  forceHorizontalAlign = false;
   /** string, Opciones posibles: 'top' | 'bottom' (default). Indica donde se alineará el expansion-overlay en el eje Y, por ejemplo si se alinea 'top' el expansion-overlay se colocará por encima del objeto y la animación de expandirse será de abajo hacia arriba. */
   verticalAlign = 'bottom';
   /** boolean, Opciones posibles: 'true' (default) | 'false'. Indica si el width del expansion-overlay será igual que el width del HTMLElement de expandFromItem */
@@ -133,7 +135,7 @@ class ExpansionOverlay extends HTMLElement {
    * Ciclo de vida del webcomponent. Es el método que crea el observable, aquí se determina que las propiedades (@Input) que tendra el webcomponent.
    */
   static get observedAttributes() {
-    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'expand-from-item-hide-round-border', 'horizontal-align', 'vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height', 'animation-duration', 'show-backdrop'];
+    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'expand-from-item-hide-round-border', 'horizontal-align', 'force-horizontal-align', 'vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height', 'animation-duration', 'show-backdrop'];
   }
 
   /**
@@ -159,6 +161,11 @@ class ExpansionOverlay extends HTMLElement {
 
     if (name === 'horizontal-align') {
       this.horizontalAlign = newValue;
+      return;
+    }
+
+    if (name === 'force-horizontal-align') {
+      this.forceHorizontalAlign = newValue;
       return;
     }
 
@@ -460,29 +467,108 @@ class ExpansionOverlay extends HTMLElement {
   /**
    * Actualiza
    */
-  updateHorizontalAlign() { // TODO - HACER CALCULO, SI ESTÁ A LEFT POR EJEMPLO PERO NO HAY ESPACIO, PONERLO EN RIGHT Y VICEVERSA. SI ESTÁ EN MIDDLE Y NO HAY ESPACIO CAMBIAR TAMBIÉN.
-    // TODO - SE CALCULAN INMEDIATAMENTE TODAS LAS POSICIONES POSIBLES, SE ELIGE LA QUE MENOS PX DEJE FUERA DE LA PANTALLA. AÑADIR NUEVO INPUT PARA DESHABILITAR EL CALCULO Y PONER UNA POSICIÓN FORZOSAMENTE IGNORANDO LOS CALCULOS.
+  updateHorizontalAlign() {
     let expandFromItem = this.getExpandFromItem();
     if (expandFromItem == null) {
       return;
     }
 
-    const horizontalAlign = this.getAttribute('horizontal-align') ?? this.horizontalAlign;
+    // Calculos del expansion-overlay en las diferentes posiciones posibles de horizontalAlign
+    const horizontalCalculations = {
+      left: expandFromItem.getBoundingClientRect().left,
+      right: window.innerWidth - expandFromItem.getBoundingClientRect().right,
+      middle: expandFromItem.getBoundingClientRect().left + ((expandFromItem.clientWidth / 2) - (document.getElementById('overlayContainer').clientWidth / 2))
+    };
+
+    let horizontalAlign = this.getAttribute('horizontal-align') ?? this.horizontalAlign;
+    const forceHorizontalAlign = this.getAttribute('force-horizontal-align') ?? this.forceHorizontalAlign;
+
+    // Si se fuerza la posición de horizontalAlign no se realizarán los cálculos para cambiar el horizontalAlign si no hay espacio suficiente
+    if ((typeof forceHorizontalAlign == "boolean" && !forceHorizontalAlign) || (typeof forceHorizontalAlign === 'string' && forceHorizontalAlign.toLowerCase() === 'false')) {
+      horizontalAlign = this.checkHorizontalAlignAvailability(horizontalAlign, horizontalCalculations);
+    }
+
     if (horizontalAlign == 'left') {
-      document.getElementById('overlayContainer').style.left = `${expandFromItem.getBoundingClientRect().left}px`;
+      document.getElementById('overlayContainer').style.left = `${horizontalCalculations.left}px`;
       return;
     }
 
     if (horizontalAlign == 'right') {
-      const offsetRight = window.innerWidth - expandFromItem.getBoundingClientRect().right;
-      document.getElementById('overlayContainer').style.right = `${offsetRight}px`;
+      document.getElementById('overlayContainer').style.right = `${horizontalCalculations.right}px`;
       return;
     }
 
     if (horizontalAlign == 'middle') {
-      const offsetMiddle = (expandFromItem.clientWidth / 2) - (document.getElementById('overlayContainer').clientWidth / 2);
-      document.getElementById('overlayContainer').style.left = `${expandFromItem.getBoundingClientRect().left + offsetMiddle}px`;
+      document.getElementById('overlayContainer').style.left = `${horizontalCalculations.middle}px`;
       return;
+    }
+  }
+
+  /**
+   * Comprueba si es necesario cambiar el horizontalAlign, debido a que el horizontalAlign seleccionado no deja suficiente espacio para el expansion-overlay
+   */
+  checkHorizontalAlignAvailability(horizontalAlign, horizontalCalculations) {
+    if (horizontalAlign == 'left') {
+      // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + document.getElementById('overlayContainer').clientWidth) >= 0)) {
+        return horizontalAlign;
+      }
+
+      // Comprueba que horizontalAlign tiene más espacio disponible
+      const minCalculation = Math.min(Math.abs(horizontalCalculations.left), Math.abs(horizontalCalculations.right), Math.abs(horizontalCalculations.middle));
+      if (minCalculation === Math.abs(horizontalCalculations.left)) {
+        return 'left';
+      }
+      if (minCalculation === Math.abs(horizontalCalculations.right)) {
+        return 'right';
+      }
+      if (minCalculation === Math.abs(horizontalCalculations.middle)) {
+        return 'middle';
+      }
+
+      return 'left'; // Failsafe return, nunca debería llegar a este return
+    }
+
+    if (horizontalAlign == 'right') {
+      // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + document.getElementById('overlayContainer').clientWidth) >= 0)) {
+        return horizontalAlign;
+      }
+
+      // Comprueba que horizontalAlign tiene más espacio disponible
+      const minCalculation = Math.min(Math.abs(horizontalCalculations.left), Math.abs(horizontalCalculations.right), Math.abs(horizontalCalculations.middle));
+      if (minCalculation === Math.abs(horizontalCalculations.left)) {
+        return 'left';
+      }
+      if (minCalculation === Math.abs(horizontalCalculations.right)) {
+        return 'right';
+      }
+      if (minCalculation === Math.abs(horizontalCalculations.middle)) {
+        return 'middle';
+      }
+
+      return 'right'; // Failsafe return, nunca debería llegar a este return
+    }
+
+    if (horizontalAlign == 'middle') {
+      // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + document.getElementById('overlayContainer').clientWidth) >= 0)) {
+        return horizontalAlign;
+      }
+
+      // Comprueba que horizontalAlign tiene más espacio disponible
+      const minCalculation = Math.min(Math.abs(horizontalCalculations.left), Math.abs(horizontalCalculations.right), Math.abs(horizontalCalculations.middle));
+      if (minCalculation === Math.abs(horizontalCalculations.left)) {
+        return 'left';
+      }
+      if (minCalculation === Math.abs(horizontalCalculations.right)) {
+        return 'right';
+      }
+      if (minCalculation === Math.abs(horizontalCalculations.middle)) {
+        return 'middle';
+      }
+
+      return 'middle'; // Failsafe return, nunca debería llegar a este return
     }
   }
 
