@@ -460,7 +460,8 @@ class ExpansionOverlay extends HTMLElement {
   /**
    * Actualiza
    */
-  updateHorizontalAlign() { // TODO - HACER CALCULO, SI ESTÁ A LEFT POR EJEMPLO PERO NO HAY ESPACIO, PONERLO EN RIGHT Y VICEVERSA. SI ESTÁ EN MIDDLE Y NO HAY ESPACIO CAMBIAR TAMBIÉN. PERO SI CON LEFT POR EJEMPLO NO HAY ESPACIO NUNCA PONER MIDDLE. MIDDLE ES SOLO MANUAL.
+  updateHorizontalAlign() { // TODO - HACER CALCULO, SI ESTÁ A LEFT POR EJEMPLO PERO NO HAY ESPACIO, PONERLO EN RIGHT Y VICEVERSA. SI ESTÁ EN MIDDLE Y NO HAY ESPACIO CAMBIAR TAMBIÉN.
+    // TODO - SE CALCULAN INMEDIATAMENTE TODAS LAS POSICIONES POSIBLES, SE ELIGE LA QUE MENOS PX DEJE FUERA DE LA PANTALLA. AÑADIR NUEVO INPUT PARA DESHABILITAR EL CALCULO Y PONER UNA POSICIÓN FORZOSAMENTE IGNORANDO LOS CALCULOS.
     let expandFromItem = this.getExpandFromItem();
     if (expandFromItem == null) {
       return;
@@ -468,19 +469,19 @@ class ExpansionOverlay extends HTMLElement {
 
     const horizontalAlign = this.getAttribute('horizontal-align') ?? this.horizontalAlign;
     if (horizontalAlign == 'left') {
-      document.getElementById('overlayContainer').style.left = `${expandFromItem.offsetLeft}px`;
+      document.getElementById('overlayContainer').style.left = `${expandFromItem.getBoundingClientRect().left}px`;
       return;
     }
 
     if (horizontalAlign == 'right') {
-      const offsetRight = window.innerWidth - expandFromItem.offsetLeft - expandFromItem.offsetWidth;
+      const offsetRight = window.innerWidth - expandFromItem.getBoundingClientRect().right;
       document.getElementById('overlayContainer').style.right = `${offsetRight}px`;
       return;
     }
 
     if (horizontalAlign == 'middle') {
       const offsetMiddle = (expandFromItem.clientWidth / 2) - (document.getElementById('overlayContainer').clientWidth / 2);
-      document.getElementById('overlayContainer').style.left = `${expandFromItem.offsetLeft + offsetMiddle}px`;
+      document.getElementById('overlayContainer').style.left = `${expandFromItem.getBoundingClientRect().left + offsetMiddle}px`;
       return;
     }
   }
@@ -492,22 +493,17 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     const borderRadiusValue = this.updateRoundBorder();
-
     const verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
     // El expansion-overlay sale debajo del componente, la animación de expansión es hacia abajo.
     if (verticalAlign == 'top') {
-      const offsetTop = window.innerHeight - expandFromItem.offsetTop - borderRadiusValue;
+      const offsetTop = window.innerHeight - expandFromItem.getBoundingClientRect().top - borderRadiusValue;
       document.getElementById('overlayContainer').style.bottom = `${offsetTop}px`;
       return;
     }
 
     // El expansion-overlay sale arriba del componente, la animación de expansión es hacia arriba.
     if (verticalAlign == 'bottom') {
-      console.log(expandFromItem.offsetTop);
-      console.log(expandFromItem.clientHeight);
-      console.log(borderRadiusValue);
-      const offsetBottom = expandFromItem.offsetTop + expandFromItem.clientHeight - borderRadiusValue;
-      console.log(offsetBottom);
+      const offsetBottom = expandFromItem.getBoundingClientRect().bottom - borderRadiusValue;
       document.getElementById('overlayContainer').style.top = `${offsetBottom}px`;
       return;
     }
