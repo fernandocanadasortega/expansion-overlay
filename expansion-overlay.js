@@ -15,7 +15,8 @@ class ExpansionOverlay extends HTMLElement {
   componentToExpand = null;
   /** string, Id de HTMLElement. Id del item que causa la expasión, suele ser un botón. A este HTMLElement se le añade un addEventListener 'click'. */
   expandTrigger = null;
-  // expandFromItemHideBorder // TODO - Subir overlayContainer hasta que cubra el border-radius del item original y añadirle el border-radius a overlayContainer
+  /** boolean, Opciones posibles: 'true' | 'false' (default). Indica si expansion-overlay ocultará el border-radius del elemento expandFromItem cuando se despliegue, es solo un cambio estético para que no se vea un borde redondeado y luego el expansion-overlay */
+  expandFromItemHideRoundBorder = false;
   /** string, Opciones posibles: 'left' (default) | 'middle' | 'right'. Indica donde se alineará el expansion-overlay en el eje X, por ejemplo si se alinea 'left' el expansion-overlay se pegará a la izquierda y si necesita más espacio crecerá hacia la derecha. */
   horizontalAlign = 'left';
   /** string, Opciones posibles: 'top' | 'bottom' (default). Indica donde se alineará el expansion-overlay en el eje Y, por ejemplo si se alinea 'top' el expansion-overlay se colocará por encima del objeto y la animación de expandirse será de abajo hacia arriba. */
@@ -28,6 +29,10 @@ class ExpansionOverlay extends HTMLElement {
   inheritParentHeight = true;
   /** string, valores posibles: '350px' | '150em' | '50%' | '200vh'. Indica un height específico para el expansion-overlay (si el parametro inheritParentHeight está 'true' este parametro se ignora). */
   customHeight = '';
+  /** string, valores posibles: '0.25s' | '250ms'. Indica el tiempo de la animación de despliegue del expansion-overlay. */
+  animationDuration = '0.25s';
+  /** boolean, Opciones posibles: 'true' (default) | 'false'. Indica si el componente backdrop debe aparecer cuando se despliegue el expansion-overlay. */
+  showBackdrop = true;
 
   constructor() {
     super();
@@ -108,7 +113,7 @@ class ExpansionOverlay extends HTMLElement {
       return;
     }
     else if (this.getAttribute('expand-trigger-id') != null && this.getAttribute('expand-trigger-class') != null) {
-      console.warn('WARNING: Property expand-trigger-id and expand-trigger-class are mutually exclusive, expand-trigger-id will be used by default.'); // todo - reactivar
+      console.warn('WARNING: Property expand-trigger-id and expand-trigger-class are mutually exclusive, expand-trigger-id will be used by default.');
     }
 
     // Si el parametro inheritParentWidth es 'true' o no viene (por defecto es 'true') el parámetro custom-width se ignora
@@ -128,7 +133,7 @@ class ExpansionOverlay extends HTMLElement {
    * Ciclo de vida del webcomponent. Es el método que crea el observable, aquí se determina que las propiedades (@Input) que tendra el webcomponent.
    */
   static get observedAttributes() {
-    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'horizontal-align', 'vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height'];
+    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'expand-from-item-hide-round-border', 'horizontal-align', 'vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height', 'animation-duration', 'show-backdrop'];
   }
 
   /**
@@ -177,6 +182,11 @@ class ExpansionOverlay extends HTMLElement {
       return;
     }
 
+    if (name === 'expand-from-item-hide-round-border') {
+      this.expandFromItemHideRoundBorder = newValue;
+      return;
+    }
+
     if (name === 'inherit-parent-width') {
       this.inheritParentWidth = newValue;
       return;
@@ -194,6 +204,16 @@ class ExpansionOverlay extends HTMLElement {
 
     if (name === 'custom-height') {
       this.customHeight = newValue;
+      return;
+    }
+
+    if (name === 'animation-duration') {
+      this.animationDuration = newValue;
+      return;
+    }
+
+    if (name === 'show-backdrop') {
+      this.showBackdrop = newValue;
       return;
     }
   }
@@ -334,12 +354,11 @@ class ExpansionOverlay extends HTMLElement {
       position: absolute;
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s ease-out;
       z-index: 10000;
     `;
     newParent.style.width = `${this.getComponentToExpandWidth()}px`;
     newParent.style.height = `${this.getComponentToExpandHeight()}px`;
-    // todo - establecer height
+    newParent.style.transition = `max-height ${this.getAttribute('animation-duration') ?? this.animationDuration} ease-out`;
 
     const originalElementParent = originalElement.parentNode; // Accedemos al padre original del elemento al que le vamos a crear el padre
     // set the wrapper as child (instead of the element) (Basicamente eliminamos el elemento original y lo sustitumos por el que va a ser su padre)
@@ -359,19 +378,83 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     const backdrop = document.querySelector("expansion-overlay").shadowRoot.getElementById('backdrop'); // Buscamos en expansion-overlay (el html propio del componente) para obtener el DOM de este propio componente
+    const showBackdrop = this.getAttribute('show-backdrop') ?? this.showBackdrop;
+    // No está habilitado el backdrop, se procede a ocultar
+    if ((typeof showBackdrop == "boolean" && !showBackdrop) || (typeof showBackdrop === 'string' && showBackdrop.toLowerCase() === 'false')) {
+      backdrop.style.transition = 'unset';
+      backdrop.style.visibility = 'hidden';
+    }
+
     // El usuario hace click en el backdrop
     backdrop.addEventListener('click', () => {
       const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
-      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px'; // TODO - TAMAÑO VARIABLE // Despliega - oculta el overlay
+      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px';
       backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
     });
 
     // El usuario hace click en el botón del componente externo
     this.getExpandTrigger().addEventListener('click', () => {
       const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
-      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px'; // TODO - TAMAÑO VARIABLE // Despliega - oculta el overlay
+      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px';
       backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
     });
+  }
+
+  /**
+   * Añade un border-radius al expansion-overlay con los mismos px que tenia el border-radius de expandFromItem.
+   * @returns string, Número de px que se tienen que reducir del cálculo de posicionamiento del expansion-overlay para ocultar el border-radius de expandFromItem
+   */
+  updateRoundBorder() {
+    const expandFromItemHideRoundBorder = this.getAttribute('expand-from-item-hide-round-border') ?? this.expandFromItemHideRoundBorder;
+
+    // No está habilitada la opción de ocultado de borde redondeado
+    if ((typeof expandFromItemHideRoundBorder == "boolean" && !expandFromItemHideRoundBorder) ||
+      (typeof expandFromItemHideRoundBorder === 'string' && this.getAttribute('expand-from-item-hide-round-border').toLowerCase() === 'false')) {
+      return 0;
+    }
+
+    const verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
+    const computedStyles = window.getComputedStyle(this.getExpandFromItem()); // El componente expandFromItem debe existir aquí obligatoriamente o el código no podría llegar a esta línea
+
+    // El expansion-overlay sale debajo del componente, la animación de expansión es hacia abajo.
+    if (verticalAlign == 'top') {
+      const borderTopLeftRadius = computedStyles.getPropertyValue('border-top-left-radius').replace('px', '');
+      const borderTopRightRadius = computedStyles.getPropertyValue('border-top-right-radius').replace('px', '');
+      document.getElementById('overlayContainer').style.borderTopLeftRadius = `${borderTopLeftRadius}px`;
+      document.getElementById('overlayContainer').style.borderTopRightRadius = `${borderTopRightRadius}px`;
+
+      // Si ocurre que un border-radius es mayor que el otro coger el de mayor valor. Se divide entre 2 porque el border-radius forma una curva, y solo una mitad sería visible.
+      if (borderTopLeftRadius > borderTopRightRadius) {
+        return borderBottomLeftRadius / 2;
+      }
+
+      if (borderTopRightRadius > borderTopLeftRadius) {
+        return borderTopRightRadius / 2;
+      }
+
+      return borderTopLeftRadius / 2;
+    }
+
+    // El expansion-overlay sale arriba del componente, la animación de expansión es hacia arriba.
+    if (verticalAlign == 'bottom') {
+      const borderBottomLeftRadius = computedStyles.getPropertyValue('border-bottom-left-radius').replace('px', '');
+      const borderBottomRightRadius = computedStyles.getPropertyValue('border-bottom-right-radius').replace('px', '');
+      document.getElementById('overlayContainer').style.borderBottomLeftRadius = `${borderBottomLeftRadius}px`;
+      document.getElementById('overlayContainer').style.borderBottomRightRadius = `${borderBottomRightRadius}px`;
+
+      // Si ocurre que un border-radius es mayor que el otro coger el de mayor valor. Se divide entre 2 porque el border-radius forma una curva, y solo una mitad sería visible.
+      if (borderBottomLeftRadius > borderBottomRightRadius) {
+        return borderBottomLeftRadius / 2;
+      }
+
+      if (borderBottomRightRadius > borderBottomLeftRadius) {
+        return borderBottomRightRadius / 2;
+      }
+
+      return borderBottomLeftRadius / 2;
+    }
+
+    return 0; // Failsafe return, nunca debería llegar a este return
   }
 
   /**
@@ -408,17 +491,23 @@ class ExpansionOverlay extends HTMLElement {
       return;
     }
 
+    const borderRadiusValue = this.updateRoundBorder();
+
     const verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
     // El expansion-overlay sale debajo del componente, la animación de expansión es hacia abajo.
     if (verticalAlign == 'top') {
-      const offsetTop = window.innerHeight - expandFromItem.offsetTop;
+      const offsetTop = window.innerHeight - expandFromItem.offsetTop - borderRadiusValue;
       document.getElementById('overlayContainer').style.bottom = `${offsetTop}px`;
       return;
     }
 
     // El expansion-overlay sale arriba del componente, la animación de expansión es hacia arriba.
     if (verticalAlign == 'bottom') {
-      const offsetBottom = expandFromItem.offsetTop + expandFromItem.clientHeight;
+      console.log(expandFromItem.offsetTop);
+      console.log(expandFromItem.clientHeight);
+      console.log(borderRadiusValue);
+      const offsetBottom = expandFromItem.offsetTop + expandFromItem.clientHeight - borderRadiusValue;
+      console.log(offsetBottom);
       document.getElementById('overlayContainer').style.top = `${offsetBottom}px`;
       return;
     }
