@@ -2,7 +2,9 @@ class ExpansionOverlay extends HTMLElement {
 
   /** Un flag para que no se muestren los mensajes de error de componente sin inicializar */
   loadBeforeAttributesInit = true;
+  /** Una promesa que obliga a esperar a que cargen los templates antes de que se creen y modifiquen los atributos del DOM */
   loadTemplatePromise;
+
 
   /**
    * VALORES POR DEFECTO
@@ -13,6 +15,7 @@ class ExpansionOverlay extends HTMLElement {
   componentToExpand = null;
   /** string, Id de HTMLElement. Id del item que causa la expasión, suele ser un botón. A este HTMLElement se le añade un addEventListener 'click'. */
   expandTrigger = null;
+  // expandFromItemHideBorder // TODO - Subir overlayContainer hasta que cubra el border-radius del item original y añadirle el border-radius a overlayContainer
   /** string, Opciones posibles: 'left' (default) | 'middle' | 'right'. Indica donde se alineará el expansion-overlay en el eje X, por ejemplo si se alinea 'left' el expansion-overlay se pegará a la izquierda y si necesita más espacio crecerá hacia la derecha. */
   horizontalAlign = 'left';
   /** string, Opciones posibles: 'top' | 'bottom' (default). Indica donde se alineará el expansion-overlay en el eje Y, por ejemplo si se alinea 'top' el expansion-overlay se colocará por encima del objeto y la animación de expandirse será de abajo hacia arriba. */
@@ -21,6 +24,10 @@ class ExpansionOverlay extends HTMLElement {
   inheritParentWidth = true;
   /** string, valores posibles: '350px' | '150em' | '50%' | '200vw'. Indica un width específico para el expansion-overlay (si el parametro inheritParentWidth está 'true' este parametro se ignora). */
   customWidth = '';
+  /** boolean, Opciones posibles: 'true' (default) | 'false'. Indica si el height del expansion-overlay será igual que el height del HTMLElement de expandFromItem */
+  inheritParentHeight = true;
+  /** string, valores posibles: '350px' | '150em' | '50%' | '200vh'. Indica un height específico para el expansion-overlay (si el parametro inheritParentHeight está 'true' este parametro se ignora). */
+  customHeight = '';
 
   constructor() {
     super();
@@ -50,7 +57,7 @@ class ExpansionOverlay extends HTMLElement {
     styleElement.textContent = cssContent;
     this.shadowRoot.appendChild(styleElement);
 
-    this.createOverlay(loadTemplateResolve);
+    loadTemplateResolve();
   }
 
   // Función para cargar el template HTML
@@ -68,59 +75,6 @@ class ExpansionOverlay extends HTMLElement {
   async loadCSS() {
     const response = await fetch('assets/expansion-overlay/expansion-overlay.css');
     return await response.text();
-  }
-
-  createOverlay(loadTemplateResolve) {
-    const originalElement = document.getElementById("password-composition"); // Obtenemos el elemento al que le vamos a crear el padre // todo - por parametro
-    const newParent = document.createElement('div'); // Creamos el elemento padre: overlay-container, el responsable de la animación de despliegue
-    newParent.id = 'overlayContainer';
-    newParent.style.cssText = `
-      position: absolute;
-      bottom: 100%; /* El contenido está inicialmente por encima del encabezado */
-      width: 100%;
-      max-height: 0;
-      overflow: hidden;
-      background-color: #f9f9f9;
-      transition: max-height 0.3s ease-out;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); /* Sombras hacia arriba */
-      border-top: 1px solid #ddd; /* Separador del contenido */
-
-      height: 140px;
-      bottom: 200px;
-      /* max-height: 100px; */
-      z-index: 10000;
-      width: 350px;
-    `; // todo - revisar estructura
-
-    const originalElementParent = originalElement.parentNode; // Accedemos al padre original del elemento al que le vamos a crear el padre
-    // set the wrapper as child (instead of the element) (Basicamente eliminamos el elemento original y lo sustitumos por el que va a ser su padre)
-    originalElementParent.replaceChild(newParent, originalElement); // Sustituimos el elemento original por nuestro elemento padre recién creado
-    // set element as child of wrapper
-    newParent.appendChild(originalElement); // A nuestro elemento padre le añadimos el elemento original como hijo
-
-    loadTemplateResolve();
-    this.manageVisibility();
-  }
-
-  /**
-   * Muestra - oculta el backdrop y el overlay
-   */
-  manageVisibility() {
-    const backdrop = document.querySelector("expansion-overlay").shadowRoot.getElementById('backdrop'); // Buscamos en expansion-overlay para obtener el DOM de este componente
-    // El usuario hace click en el backdrop
-    backdrop.addEventListener('click', function () {
-      const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
-      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? '200px' : '0px'; // Despliega - oculta el overlay
-      // console.log(document.getElementById('overlayContainer').style.maxHeight);
-      backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
-    });
-
-    // El usuario hace click en el botón del componente externo
-    document.getElementById('click-trigger').addEventListener('click', function () {
-      const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
-      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? '200px' : '0px'; // Despliega - oculta el overlay
-      backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
-    });
   }
 
   /**
@@ -150,11 +104,21 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     if (this.getAttribute('expand-trigger-id') == null && this.getAttribute('expand-trigger-class') == null) {
-      // console.error('ERROR: Property expand-trigger has not been initialized correctly.'); // todo - reactivar
-      // return; // todo - reactivar
+      console.error('ERROR: Property expand-trigger has not been initialized correctly.');
+      return;
     }
     else if (this.getAttribute('expand-trigger-id') != null && this.getAttribute('expand-trigger-class') != null) {
-      // console.warn('WARNING: Property expand-trigger-id and expand-trigger-class are mutually exclusive, expand-trigger-id will be used by default.'); // todo - reactivar
+      console.warn('WARNING: Property expand-trigger-id and expand-trigger-class are mutually exclusive, expand-trigger-id will be used by default.'); // todo - reactivar
+    }
+
+    // Si el parametro inheritParentWidth es 'true' o no viene (por defecto es 'true') el parámetro custom-width se ignora
+    if (this.getAttribute('custom-width') != null && (this.getAttribute('inherit-parent-width') == null || (this.getAttribute('inherit-parent-width') != null && this.getAttribute('inherit-parent-width').toLowerCase() === 'true'))) {
+      console.warn('WARNING: Property inherit-parent-width == true and custom-width are mutually exclusive, custom-width will be ignored. Use inherit-parent-width == false to enforce custom-width.');
+    }
+
+    // Si el parametro inheritParentHeight es 'true' o no viene (por defecto es 'true') el parámetro custom-height se ignora
+    if (this.getAttribute('custom-height') != null && (this.getAttribute('inherit-parent-height') == null || (this.getAttribute('inherit-parent-height') != null && this.getAttribute('inherit-parent-height').toLowerCase() === 'true'))) {
+      console.warn('WARNING: Property inherit-parent-height == true and custom-height are mutually exclusive, custom-height will be ignored. Use inherit-parent-height == false to enforce custom-height.');
     }
 
     this.manageExpansionOverlay();
@@ -164,7 +128,7 @@ class ExpansionOverlay extends HTMLElement {
    * Ciclo de vida del webcomponent. Es el método que crea el observable, aquí se determina que las propiedades (@Input) que tendra el webcomponent.
    */
   static get observedAttributes() {
-    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'horizontal-align', 'vertical-align', 'inherit-parent-width', 'custom-width'];
+    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'horizontal-align', 'vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height'];
   }
 
   /**
@@ -220,6 +184,16 @@ class ExpansionOverlay extends HTMLElement {
 
     if (name === 'custom-width') {
       this.customWidth = newValue;
+      return;
+    }
+
+    if (name === 'inherit-parent-height') {
+      this.inheritParentHeight = newValue;
+      return;
+    }
+
+    if (name === 'custom-height') {
+      this.customHeight = newValue;
       return;
     }
   }
@@ -320,9 +294,84 @@ class ExpansionOverlay extends HTMLElement {
     return expandTrigger;
   }
 
+  getComponentToExpandWidth() {
+    // Existe un customWidth y inheritParentWidth viene a falso
+    if (this.getAttribute('custom-width') != null && this.getAttribute('inherit-parent-width') != null && this.getAttribute('inherit-parent-width').toLowerCase() === 'false') {
+      return this.getAttribute('custom-width');
+    }
+
+    const originalElement = this.getComponentToExpand(); // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
+    return originalElement.clientWidth;
+  }
+
+  getComponentToExpandHeight() {
+    // Existe un customHeight y inheritParentHeight viene a falso
+    if (this.getAttribute('custom-height') != null && this.getAttribute('inherit-parent-height') != null && this.getAttribute('inherit-parent-height').toLowerCase() === 'false') {
+      return this.getAttribute('custom-height');
+    }
+
+    const originalElement = this.getComponentToExpand(); // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
+    return originalElement.clientHeight;
+  }
+
   async manageExpansionOverlay() {
     await this.loadTemplatePromise;
+
+    this.createOverlay();
     this.updateHorizontalAlign();
+    this.updateVertialAlign();
+  }
+
+  createOverlay() {
+    const originalElement = this.getComponentToExpand(); // Obtenemos el elemento al que le vamos a crear el padre
+    if (originalElement == null) {
+      return;
+    }
+
+    const newParent = document.createElement('div'); // Creamos el elemento padre: overlayContainer, el responsable de la animación de despliegue
+    newParent.id = 'overlayContainer'; // Siempre va a ser este ID, es obligatorio
+    newParent.style.cssText = `
+      position: absolute;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+      z-index: 10000;
+    `;
+    newParent.style.width = `${this.getComponentToExpandWidth()}px`;
+    newParent.style.height = `${this.getComponentToExpandHeight()}px`;
+    // todo - establecer height
+
+    const originalElementParent = originalElement.parentNode; // Accedemos al padre original del elemento al que le vamos a crear el padre
+    // set the wrapper as child (instead of the element) (Basicamente eliminamos el elemento original y lo sustitumos por el que va a ser su padre)
+    originalElementParent.replaceChild(newParent, originalElement); // Sustituimos el elemento original por nuestro elemento padre recién creado
+    // set element as child of wrapper
+    newParent.appendChild(originalElement); // A nuestro elemento padre le añadimos el elemento original como hijo
+
+    this.manageVisibility();
+  }
+
+  /**
+   * Muestra - oculta el backdrop y el overlay
+   */
+  manageVisibility() {
+    if (this.getExpandTrigger() == null) {
+      return;
+    }
+
+    const backdrop = document.querySelector("expansion-overlay").shadowRoot.getElementById('backdrop'); // Buscamos en expansion-overlay (el html propio del componente) para obtener el DOM de este propio componente
+    // El usuario hace click en el backdrop
+    backdrop.addEventListener('click', () => {
+      const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
+      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px'; // TODO - TAMAÑO VARIABLE // Despliega - oculta el overlay
+      backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
+    });
+
+    // El usuario hace click en el botón del componente externo
+    this.getExpandTrigger().addEventListener('click', () => {
+      const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
+      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px'; // TODO - TAMAÑO VARIABLE // Despliega - oculta el overlay
+      backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
+    });
   }
 
   /**
@@ -349,6 +398,28 @@ class ExpansionOverlay extends HTMLElement {
     if (horizontalAlign == 'middle') {
       const offsetMiddle = (expandFromItem.clientWidth / 2) - (document.getElementById('overlayContainer').clientWidth / 2);
       document.getElementById('overlayContainer').style.left = `${expandFromItem.offsetLeft + offsetMiddle}px`;
+      return;
+    }
+  }
+
+  updateVertialAlign() { // TODO - HACER CALCULO, SI ESTÁ A TOP POR EJEMPLO PERO NO HAY ESPACIO, PONERLO EN BOTTOM Y VICEVERSA.
+    let expandFromItem = this.getExpandFromItem();
+    if (expandFromItem == null) {
+      return;
+    }
+
+    const verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
+    // El expansion-overlay sale debajo del componente, la animación de expansión es hacia abajo.
+    if (verticalAlign == 'top') {
+      const offsetTop = window.innerHeight - expandFromItem.offsetTop;
+      document.getElementById('overlayContainer').style.bottom = `${offsetTop}px`;
+      return;
+    }
+
+    // El expansion-overlay sale arriba del componente, la animación de expansión es hacia arriba.
+    if (verticalAlign == 'bottom') {
+      const offsetBottom = expandFromItem.offsetTop + expandFromItem.clientHeight;
+      document.getElementById('overlayContainer').style.top = `${offsetBottom}px`;
       return;
     }
   }
