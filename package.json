@@ -1,0 +1,19 @@
+{
+  "name": "expansion-overlay",
+  "version": "1.0.0",
+  "description": "Custom web component que despliega un overlay que se expande desde un punto en específico",
+  "main": "expansion-overlay.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fernandocanadasortega/expansion-overlay.git"
+  },
+  "author": "fernandocanadasortega",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fernandocanadasortega/expansion-overlay/issues"
+  },
+  "homepage": "https://github.com/fernandocanadasortega/expansion-overlay#readme"
+}
