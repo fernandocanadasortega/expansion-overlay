@@ -1,3 +1,8 @@
+/*
+  !! IMPORTANTE !!
+  El css se mueve como literal al archivo js debido a que ocurren fallos al realizar un fetch desde un proyecto de angular, porque no es capaz de encontrar el fichero css dentro del node_modules
+  Este fichero css se queda deprecado pero se mantiene para poder visualizar mejor la estructura del css.
+*/
 #backdrop {
   width: 100vw;
   height: 100vh;

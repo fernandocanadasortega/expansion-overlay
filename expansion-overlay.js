@@ -55,27 +55,20 @@ class ExpansionOverlay extends HTMLElement {
    * @param {any} loadTemplateResolve Parámetro resolve que termina la promesa que obliga a esperar a que cargen los templates antes de que se creen y modifiquen los atributos del DOM.
    */
   async loadTemplates(loadTemplateResolve) {
-    // Cargar el HTML y CSS
-    const [templateContent, cssContent] = await Promise.all([
-      this.loadHTMLTemplate(),
-      this.loadCSSTemplate()
-    ]);
-
     // Adjuntar el contenido del template de HTML al Shadow DOM
-    this.shadowRoot.appendChild(templateContent.cloneNode(true));
+    this.shadowRoot.appendChild(this.loadHTMLTemplate().cloneNode(true));
     // Adjuntar el contenido del template de CSS al Shadow DOM
-    this.shadowRoot.appendChild(cssContent);
+    this.shadowRoot.appendChild(this.loadCSSTemplate());
 
     loadTemplateResolve(); // Termina la promesa con un resolve
   }
 
   /**
    * Carga el archivo con el template HTML.
-   * @returns {Promise<DocumentFragment>} Devuelve una promesa con el DOM del archivo HTML.
+   * @returns {DocumentFragment} Devuelve el DOM del archivo HTML.
    */
-  async loadHTMLTemplate() {
-    const response = await fetch('expansion-overlay.html');
-    const templateText = await response.text();
+  loadHTMLTemplate() {
+    const templateText = '<div id="backdrop"></div>';
 
     // Crear un elemento <template> para agregar el archivo HTML y adjuntarlo al Shadow DOM
     const template = document.createElement('template');
@@ -86,11 +79,10 @@ class ExpansionOverlay extends HTMLElement {
 
   /**
    * Carga el archivo con el template CSS.
-   * @returns {Promise<HTMLStyleElement>} Devuelve una promesa con el objeto que contiene el <style> del archivo CSS.
+   * @returns {HTMLStyleElement} Devuelve un objeto que contiene el <style> del archivo CSS.
    */
-  async loadCSSTemplate() {
-    const response = await fetch('expansion-overlay.css');
-    const cssContent = await response.text();
+  loadCSSTemplate() {
+    const cssContent = '#backdrop { width: 100vw; height: 100vh; position: absolute; top: 0px; left: 0px; z-index: 1000; background-color: #121212; /* --ion-background-color */ opacity: 0; visibility: hidden; transition: opacity 0.25s linear, visibility 0.25s linear; } #backdrop.activated { /* opacity: 0.32; */ opacity: 0.52; visibility: visible; }';
 
     // Crear un elemento <style> para agregar el archivo CSS y adjuntarlo al Shadow DOM
     const styleElement = document.createElement('style');
@@ -149,7 +141,17 @@ class ExpansionOverlay extends HTMLElement {
       console.warn('WARNING: Property inherit-parent-height == true and custom-height are mutually exclusive, custom-height will be ignored. Use inherit-parent-height == false to enforce custom-height.');
     }
 
-    this.manageExpansionOverlay();
+    /**
+     * ¡IMPORTANTE!
+     * Este setTimeout es IMPERATIVO para que el componente funcione, ya que garantiza que el DOM esté listo antes de que el método se ejecute.
+     * 
+     * The connectedCallback fires on the opening tag, its inner content is not yet parsed.
+     * So to make it work when your Custom Element is defined BEFORE being used, you have to delay execution till the Components DOM (innnerText or innerHTML) is parsed.
+     * https://stackoverflow.com/questions/68070285/web-component-behaves-differently-depending-on-defer-being-used-or-not
+     */
+    setTimeout(() => {
+      this.manageExpansionOverlay();
+    }, 50);
   }
 
   /**
