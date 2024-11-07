@@ -37,7 +37,7 @@
   <h2 align="center">Expansion overlay</h2>
 
   <p align="center">
-    Custom web component de JavaScript nativo que despliega un overlay que se expande desde un punto en específico
+    Custom web component de JavaScript nativo que despliega un overlay que se expande desde un punto en específico.
     <br />
     <a href="#readme-spanish"><strong>Go to english docs »</strong></a>
     <br />
@@ -63,9 +63,9 @@ Custom web component de JavaScript nativo que despliega un overlay, es completam
 
 Puede ser configurado para que el overlay de multiples maneras:
 * Configuración del despliegue vertical, hacia arriba o hacia abajo.
-* Configuración del despliegue horizontal, alineación a la izquierda, a la derecha o que se quede en medio
+* Configuración del despliegue horizontal, alineación a la izquierda, a la derecha o que se quede en medio.
 * Configuración que compruebe si el componente del que saldrá tiene border-radius y aplicarlos al overlay.
-* Y muchas más configuraciones :smile:
+* Y muchas más configuraciones :smile:.
 
 -- TODO -- EXPLICACION DE LA DIFERENCIA ENTRE expandFromItem - componentToExpand - expandTrigger 
 
