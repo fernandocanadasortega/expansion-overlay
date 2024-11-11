@@ -113,14 +113,84 @@ Una vez habilitada la configuración procedemos a descargar el componente de NPM
 
 Para realizar la configuración básica del componente son necesarios **tres parámetros obligatorios**, para ver el resto de la configuración mirar el apartado [Parámetros disponibles](#par%C3%A1metros-disponibles).
 
--- TODO -- EXPLICACION DE LA DIFERENCIA ENTRE expandFromItem - componentToExpand - expandTrigger 
+-- TODO -- EXPLICACION DE LA DIFERENCIA ENTRE expandFromItem - componentToExpand - expandTrigger y explicar que hay que pasar el string del #ID o .class
 
 <br />
 
 <!-- Available parameters -->
 ## Parámetros disponibles
 
-Este apartado describle cada parámetro configurable del componente, sus restricciones y valores predeterminados.
+#### Definición del elemento desde donde se desplegará el expansion-overlay.
+  
+| Parámetros             | Tipo   | Descripción                      | ¿Parámetro requerido? | Valor por defecto |
+| ---------------------- | ------ | -------------------------------- | --------------------- | ----------------- |
+| expand-from-item-id    | string | Valor del #ID del HTMLElement    | ✅                    | null              |
+| expand-from-item-class | string | Valor del .class del HTMLElement | ✅                    | null              |
+
+> Los parámetros **expand-from-item-id** y **expand-from-item-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-from-item-id** será usado por defecto.
+<br />
+
+#### Definición del elemento que se introducirá en el expansion-overlay, el elemento que tendrá la animación de despliegue.
+  
+| Parámetros                | Tipo   | Descripción                      | ¿Parámetro requerido? | Valor por defecto |
+| ------------------------- | ------ | -------------------------------- | --------------------- | ----------------- |
+| component-to-expand-id    | string | Valor del #ID del HTMLElement    | ✅                    | null              |
+| component-to-expand-class | string | Valor del .class del HTMLElement | ✅                    | null              |
+
+> Los parámetros **component-to-expand-id** y **component-to-expand-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **component-to-expand-id** será usado por defecto.
+<br />
+
+#### Definición del elemento que activa la expansión. *Normalmente es un botón*, pero se le puede asignar a cualquier elemento que soporte <code>addEventListener click</code>.
+  
+| Parámetros           | Tipo   | Descripción                      | ¿Parámetro requerido? | Valor por defecto |
+| -------------------- | ------ | -------------------------------- | --------------------- | ----------------- |
+| expand-trigger-id    | string | Valor del #ID del HTMLElement    | ✅                    | null              |
+| expand-trigger-class | string | Valor del .class del HTMLElement | ✅                    | null              |
+
+> Los parámetros **expand-trigger-id** y **expand-trigger-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-trigger-id** será usado por defecto.
+<br />
+
+#### Alineaciones del componente
+  
+| Parámetros             | Tipo    | Descripción                                                   | ¿Parámetro requerido? | Valor por defecto | Opciones válidas      |
+| ---------------------- | ------- | ------------------------------------------------------------- | --------------------- | ----------------- | --------------------- |
+| horizontal-align       | string  | Indica donde se alineará el expansion-overlay en el eje X     | ❎                    | left              | left / middle / right |
+| vertical-align         | string  | Indica donde se alineará el expansion-overlay en el eje Y     | ❎                    | bottom            | top / bottom          |
+| force-horizontal-align | boolean | Fuerza a utilizar únicamente el horizontalAlign seleccionado  | ❎                    | false             |                       |
+| force-vertical-align   | boolean | Fuerza a utilizar únicamente el vertical-align seleccionado   | ❎                    | false             |                       |
+
+> Si se establece **horizontal-align: 'left'** el expansion-overlay se pegará a la izquierda y si necesita más espacio crecerá hacia la derecha.
+
+> Si se establece **vertical-align: 'top'** el expansion-overlay se colocará por encima del objeto y la animación de expansión será de abajo hacia arriba.
+
+> Si se fuerza la alineación, *tanto horizontal como vertical*, se ignorará la función que cambia la alineación del expansion-overlay de forma automática cuando no hay espacio suficiente.
+<br />
+
+#### Tamaño del componente
+  
+| Parámetros            | Tipo    | Descripción                                                                         | ¿Parámetro requerido? | Valor por defecto | Opciones válidas            |
+| --------------------- | ------- | ----------------------------------------------------------------------------------- | --------------------- | ----------------- | --------------------------- |
+| inherit-parent-width  | boolean | Indica si el width del expansion-overlay será igual que el width de expandFromItem  | ❎                    | true              |                             |
+| inherit-parent-height | boolean | Indica si el height del expansion-overlay será igual que el width de expandFromItem | ❎                    | true              |                             |
+| custom-width          | string  | Indica un width específico para el expansion-overlay                                | ❎                    |                   | 350px / 150em / 50% / 200vw |
+| custom-height         | string  | Indica un height específico para el expansion-overlay                               | ❎                    |                   | 350px / 150em / 50% / 200vh |
+
+> Los parámetros **inherit-parent-width** y **custom-width** son mutuamente excluyentes, en caso de recibir los dos parámetros o si solo se recibe **custom-width** pero **inherit-parent-width=true** por defecto, **inherit-parent-width** será usado por defecto.
+
+> Los parámetros **inherit-parent-height** y **custom-height** son mutuamente excluyentes, en caso de recibir los dos parámetros o si solo se recibe **custom-height** pero **inherit-parent-height=true** por defecto, **inherit-parent-height** será usado por defecto.
+<br />
+
+#### Otros parámetros
+  
+| Parámetros                         | Tipo    | Descripción                                                                               | ¿Parámetro requerido? | Valor por defecto | Opciones válidas      |
+| ---------------------------------- | ------- | ----------------------------------------------------------------------------------------- | --------------------- | ----------------- | --------------------- |
+| animation-duration                 | string  | Tiempo de la animación de despliegue del expansion-overlay                                | ❎                    | 0.25s             | 0.20s / 500ms         |
+| show-backdrop                      | boolean | Indica si se mostrará un backdrop al desplegarse el expansion-overlay                     | ❎                    | true              |                       |
+| expand-from-item-hide-round-border | boolean | Indica si el expansion-overlay ocultará el border-radius de expandFromItem al desplegarse | ❎                    | false             |                       |
+
+> Al ocultar el backdrop es posible interactuar con el resto de la aplicación cuando el expansion-overlay aún está desplegado. Al hacer click en el backdrop se cerrará automaticamente el expansion-overlay.
+
+> Al activar **expand-from-item-hide-round-border** se ocultará el border-radius de expandFromItem al desplegarse, es solo un cambio estético para que no se vea un borde redondeado y luego el expansion-overlay. El valor del border-radius de expandFromItem se aplicará al expansion-overlay.
 
 <br />
 
