@@ -12,7 +12,7 @@ class ExpansionOverlay extends HTMLElement {
   expandFromItem = null;
   /** Tipo string. Id de HTMLElement. Id del item que aparecerá en el expansion-overlay. */
   componentToExpand = null;
-  /** Tipo string. Id de HTMLElement. Id del item que causa la expasión, suele ser un botón. A este HTMLElement se le añade un addEventListener 'click'. */
+  /** Tipo string. Id de HTMLElement. Id del item que causa la expansión, suele ser un botón. A este HTMLElement se le añade un addEventListener 'click'. */
   expandTrigger = null;
   /** Tipo boolean. Opciones posibles: 'true' | 'false' (default). Indica si expansion-overlay ocultará el border-radius del elemento expandFromItem cuando se despliegue, es solo un cambio estético para que no se vea un borde redondeado y luego el expansion-overlay. */
   expandFromItemHideRoundBorder = false;
