@@ -57,7 +57,7 @@
 <!-- ABOUT THE PROJECT -->
 ## Sobre el proyecto
 
-![](https://github.com/fernandocanadasortega/expansion-overlay/blob/master/Ejemplo%20expansion-overlay.gif)
+![](assets/Ejemplo%20expansion-overlay.gif)
 
 Custom web component de JavaScript nativo que despliega un overlay, es completamente configurable. 
 
