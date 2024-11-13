@@ -42,7 +42,7 @@
     <a href="#readme-spanish"><strong>Go to english docs »</strong></a>
     <br />
     <br />
-    <a href="https://www.npmjs.com/">Página de NPM</a>
+    <a href="https://www.npmjs.com/package/expansion-overlay">Página de NPM</a>
     ·
     <a href="https://stackblitz.com/">Ver Demo</a>
     ·
