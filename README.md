@@ -44,7 +44,7 @@
     <br />
     <a href="https://www.npmjs.com/package/expansion-overlay">Página de NPM</a>
     ·
-    <a href="https://stackblitz.com/">Ver Demo</a>
+    <a href="https://stackblitz.com/edit/stackblitz-starters-p1wa2f?file=src%2Fmain.ts">Ver Demo</a>
     ·
     <a href="https://github.com/fernandocanadasortega/expansion-overlay/issues/new?labels=bug&template=bug-report---.md">Informar sobre un bug</a>
     ·
@@ -130,7 +130,7 @@ Para realizar la configuración básica del componente son necesarios **tres par
 <expansion-overlay expand-from-item-id="box-container" component-to-expand-id="div-i-want-to-overlay" expand-trigger-id="box-trigger"></expansion-overlay>
 ```
 
--- AÑADIR EJEMPLO STACKBLITZ --
+<a href="https://stackblitz.com/edit/stackblitz-starters-p1wa2f?file=src%2Fmain.ts">Ver ejemplo completo en stackblitz</a>
 
 ### Parámetro expandFromItem
 Es el elemento desde donde se desplegará el expansion-overlay, puede ser cualquier elemento del html (*div, button, span, label, etc...*). Del elemento expandFromItem se obtendrán los valores para realizar los cálculos de alineamiento del expansion-overlay.
