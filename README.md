@@ -74,7 +74,7 @@ Puede ser configurado para que el overlay de multiples maneras:
 
 ### Prerequisitos
 
-Para poder utilizar el componente es necesario habilitar una configuración de Angular dentro de cada componente en el que se vaya a usar.
+*Este paso solo ha sido probado en Angular*. Para poder utilizar el componente es necesario habilitar una configuración de Angular dentro de cada componente en el que se vaya a usar.
 * Habilitar **CUSTOM_ELEMENTS_SCHEMA**
   ```ts
   @Component({
@@ -97,23 +97,69 @@ Una vez habilitada la configuración procedemos a descargar el componente de NPM
    ```sh
    npm install expansion-overlay
    ```
-2. Importamos el archivo de JavaScript dentro de nuestro componente de angular *al que ya le hemos habilitado la opción mostrada en los prerequisitos*.
+2. Importamos el archivo de JavaScript dentro de nuestro componente. *En caso de ser Angular es obligatorio el paso mostrado en los prerequisitos*.
    ```ts
    import '@expansion-overlay/expansion-overlay.js';
    ```
-3. En el archivo HTML del componente de angular definimos la etiqueta del componente expansion-overlay. *Debe tener **tres parámetros obligatorios**, mirar apartado de [Implementación](#implementaci%C3%B3n).*
+3. En el archivo HTML del componente definimos la etiqueta del expansion-overlay. *Debe tener **tres parámetros obligatorios**, mirar apartado de [Implementación](#implementaci%C3%B3n).*
    ```html
    <expansion-overlay expand-from-item-id="id-componente" component-to-expand-id="id-componente" expand-trigger-id="id-componente"></expansion-overlay>
    ```
+<br />
+
+> *Para ver el resto de la configuración mirar el apartado [Parámetros disponibles](#par%C3%A1metros-disponibles)*.
 
 <br />
 
 <!-- USAGE -->
 ## Implementación
 
-Para realizar la configuración básica del componente son necesarios **tres parámetros obligatorios**, para ver el resto de la configuración mirar el apartado [Parámetros disponibles](#par%C3%A1metros-disponibles).
+Para realizar la configuración básica del componente son necesarios **tres parámetros obligatorios**, abajo se encuentra un diagrama básico con los tres elementos junto con un ejemplo html básico del componente.
 
--- TODO -- EXPLICACION DE LA DIFERENCIA ENTRE expandFromItem - componentToExpand - expandTrigger y explicar que hay que pasar el string del #ID o .class
+![](assets/Diagrama%20de%20ejemplo%20básico.png)
+
+```html
+<div id="box-container" style="width: 200px; height: 100px; display: flex; justify-content: flex-end; align-items: center; border: 1px solid red; padding: 10px;">
+  <button id="box-trigger" style="height: 50px;">Trigger</button>
+</div>
+
+<div id="div-i-want-to-overlay" style="width: 120px; height: 80px; border: 1px solid cyan; padding: 10px;">
+  <span>I Want to overlay this div</span>
+</div>
+
+<expansion-overlay expand-from-item-id="box-container" component-to-expand-id="div-i-want-to-overlay" expand-trigger-id="box-trigger"></expansion-overlay>
+```
+
+-- AÑADIR EJEMPLO STACKBLITZ --
+
+### Parámetro expandFromItem
+Es el elemento desde donde se desplegará el expansion-overlay, puede ser cualquier elemento del html (*div, button, span, label, etc...*). Del elemento expandFromItem se obtendrán los valores para realizar los cálculos de alineamiento del expansion-overlay.
+
+Hay dos maneras de enviar el parámetro expandFromItem, **expand-from-item-id** y **expand-from-item-class**, dependiendo si vas a enviar un **#ID** o un **.class**.
+
+> Los parámetros **expand-from-item-id** y **expand-from-item-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-from-item-id** será usado por defecto.
+
+> No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
+
+### Parámetro expandTrigger
+Es el elemento que provoca la expansión y/o el cierre del expansion-overlay, puede ser cualquier elemento del html (*div, button, span, label, etc...*). *Normalmente es un botón*, pero se le puede asignar a cualquier elemento que soporte <code>addEventListener click</code>.
+
+Hay dos maneras de enviar el parámetro expandTrigger, **expand-trigger-id** y **expand-trigger-class**, dependiendo si vas a enviar un **#ID** o un **.class**.
+
+> Los parámetros **expand-trigger-id** y **expand-trigger-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-trigger-id** será usado por defecto.
+
+> No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
+
+### Parámetro componentToExpand
+Es el elemento que se introducirá en el expansion-overlay, el elemento que tendrá la animación de despliegue, puede ser cualquier elemento del html (*div, button, span, label, etc...*). Del elemento componentToExpand se obtendrán los valores de width y height del expansion-overlay, que además se usan durante el cálculo para comprobar que el expansion-overlay cabe dentro de la pantalla.
+
+Este elemento se puede ubicar en cualquier parte del DOM, **no es necesario que esté dentro de la etiqueta <code>expansion-overlay</code>**, debido a que cuando se cree el expansion-overlay el elemento de componentToExpand se introducirá dentro de un wrapper creado por el expansion-overlay que lo hará desaparecer.
+
+Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand-id** y **component-to-expand-class**, dependiendo si vas a enviar un **#ID** o un **.class**.
+
+> Los parámetros **component-to-expand-id** y **component-to-expand-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **component-to-expand-id** será usado por defecto.
+
+> No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 
 <br />
 
@@ -128,6 +174,8 @@ Para realizar la configuración básica del componente son necesarios **tres par
 | expand-from-item-class | string | Valor del .class del HTMLElement | ✅                    | null              |
 
 > Los parámetros **expand-from-item-id** y **expand-from-item-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-from-item-id** será usado por defecto.
+
+> No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
 #### Definición del elemento que se introducirá en el expansion-overlay, el elemento que tendrá la animación de despliegue.
@@ -138,6 +186,8 @@ Para realizar la configuración básica del componente son necesarios **tres par
 | component-to-expand-class | string | Valor del .class del HTMLElement | ✅                    | null              |
 
 > Los parámetros **component-to-expand-id** y **component-to-expand-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **component-to-expand-id** será usado por defecto.
+
+> No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
 #### Definición del elemento que activa la expansión. *Normalmente es un botón*, pero se le puede asignar a cualquier elemento que soporte <code>addEventListener click</code>.
@@ -148,6 +198,8 @@ Para realizar la configuración básica del componente son necesarios **tres par
 | expand-trigger-class | string | Valor del .class del HTMLElement | ✅                    | null              |
 
 > Los parámetros **expand-trigger-id** y **expand-trigger-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-trigger-id** será usado por defecto.
+
+> No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
 #### Alineaciones del componente
