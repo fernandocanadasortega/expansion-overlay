@@ -1,6 +1,6 @@
 {
   "name": "expansion-overlay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Custom web component que despliega un overlay que se expande desde un punto en específico",
   "main": "expansion-overlay.js",
   "scripts": {
