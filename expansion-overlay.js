@@ -1,7 +1,5 @@
 class ExpansionOverlay extends HTMLElement {
 
-  /** Un flag para que no se muestren los mensajes de error de componente sin inicializar */
-  loadBeforeAttributesInit = true;
   /** Una promesa que obliga a esperar a que cargen los templates antes de que se creen y modifiquen los atributos del DOM */
   loadTemplatePromise;
 
@@ -95,52 +93,6 @@ class ExpansionOverlay extends HTMLElement {
    * Ciclo de vida del webcomponent. Se ejecuta al crearse el webcomponent y otra vez cuando se cargan por primera vez todos los atributos del attributeChangedCallback.
    */
   connectedCallback() {
-    // Evita que salgan los mensajes de error, ya que este método se ejecuta antes de que lleguen los atributos y después de que lleguen los atributos.
-    if (this.loadBeforeAttributesInit) {
-      this.loadBeforeAttributesInit = false;
-      return;
-    }
-
-    // Muestra un mensaje error cuando el atributo de input expand-from-item-id venga con algun valor distinto de null
-    if (this.getAttribute('expand-from-item-id') == null && this.getAttribute('expand-from-item-class') == null) {
-      console.error('ERROR: Property expand-from-item has not been initialized correctly.');
-      return;
-    }
-    // Muestra un mensaje advertencia e ignora el atributo de input expand-from-item-class cuando los atributos de input expand-from-item-id y expand-from-item-class vengan los dos con valor
-    else if (this.getAttribute('expand-from-item-id') != null && this.getAttribute('expand-from-item-class') != null) {
-      console.warn('WARNING: Property expand-from-item-id and expand-from-item-class are mutually exclusive, expand-from-item-id will be used by default.');
-    }
-
-    // Muestra un mensaje error cuando el atributo de input component-to-expand-id venga con algun valor distinto de null
-    if (this.getAttribute('component-to-expand-id') == null && this.getAttribute('component-to-expand-class') == null) {
-      console.error('ERROR: Property component-to-expand has not been initialized correctly.');
-      return;
-    }
-    // Muestra un mensaje advertencia e ignora el atributo de input component-to-expand-class cuando los atributos de input component-to-expand-id y component-to-expand-class vengan los dos con valor
-    else if (this.getAttribute('component-to-expand-id') != null && this.getAttribute('component-to-expand-class') != null) {
-      console.warn('WARNING: Property component-to-expand-id and component-to-expand-class are mutually exclusive, component-to-expand-id will be used by default.');
-    }
-
-    // Muestra un mensaje error cuando el atributo de input expand-trigger-id venga con algun valor distinto de null
-    if (this.getAttribute('expand-trigger-id') == null && this.getAttribute('expand-trigger-class') == null) {
-      console.error('ERROR: Property expand-trigger has not been initialized correctly.');
-      return;
-    }
-    // Muestra un mensaje advertencia e ignora el atributo de input expand-trigger-class cuando los atributos de input expand-trigger-id y expand-trigger-class vengan los dos con valor
-    else if (this.getAttribute('expand-trigger-id') != null && this.getAttribute('expand-trigger-class') != null) {
-      console.warn('WARNING: Property expand-trigger-id and expand-trigger-class are mutually exclusive, expand-trigger-id will be used by default.');
-    }
-
-    // Muestra un mensaje advertencia e ignora el atributo de input custom-width cuando el atributo de input inherit-parent-width es 'true' o no viene (su valor por defecto es 'true')
-    if (this.getAttribute('custom-width') != null && (this.getAttribute('inherit-parent-width') == null || (this.getAttribute('inherit-parent-width') != null && this.getAttribute('inherit-parent-width').toLowerCase() === 'true'))) {
-      console.warn('WARNING: Property inherit-parent-width == true and custom-width are mutually exclusive, custom-width will be ignored. Use inherit-parent-width == false to enforce custom-width.');
-    }
-
-    // Muestra un mensaje advertencia e ignora el atributo de input custom-height cuando el atributo de input inherit-parent-height es 'true' o no viene (su valor por defecto es 'true')
-    if (this.getAttribute('custom-height') != null && (this.getAttribute('inherit-parent-height') == null || (this.getAttribute('inherit-parent-height') != null && this.getAttribute('inherit-parent-height').toLowerCase() === 'true'))) {
-      console.warn('WARNING: Property inherit-parent-height == true and custom-height are mutually exclusive, custom-height will be ignored. Use inherit-parent-height == false to enforce custom-height.');
-    }
-
     /**
      * ¡IMPORTANTE!
      * Este setTimeout es IMPERATIVO para que el componente funcione, ya que garantiza que el DOM esté listo antes de que el método se ejecute.
@@ -323,12 +275,65 @@ class ExpansionOverlay extends HTMLElement {
   }
 
   /**
+   * Comprueba que parámetros han sido recibidos.
+   * @returns {boolean} Indica si se han recibido los parámetros obligatorios
+   */
+  manageAttributeAvailability() {
+    // Muestra un mensaje error cuando el atributo de input expand-from-item-id venga con algun valor distinto de null
+    if (this.getAttribute('expand-from-item-id') == null && this.getAttribute('expand-from-item-class') == null) {
+      console.error('ERROR: Property expand-from-item has not been initialized correctly.');
+      return false;
+    }
+    // Muestra un mensaje advertencia e ignora el atributo de input expand-from-item-class cuando los atributos de input expand-from-item-id y expand-from-item-class vengan los dos con valor
+    else if (this.getAttribute('expand-from-item-id') != null && this.getAttribute('expand-from-item-class') != null) {
+      console.warn('WARNING: Property expand-from-item-id and expand-from-item-class are mutually exclusive, expand-from-item-id will be used by default.');
+    }
+
+    // Muestra un mensaje error cuando el atributo de input component-to-expand-id venga con algun valor distinto de null
+    if (this.getAttribute('component-to-expand-id') == null && this.getAttribute('component-to-expand-class') == null) {
+      console.error('ERROR: Property component-to-expand has not been initialized correctly.');
+      return false;
+    }
+    // Muestra un mensaje advertencia e ignora el atributo de input component-to-expand-class cuando los atributos de input component-to-expand-id y component-to-expand-class vengan los dos con valor
+    else if (this.getAttribute('component-to-expand-id') != null && this.getAttribute('component-to-expand-class') != null) {
+      console.warn('WARNING: Property component-to-expand-id and component-to-expand-class are mutually exclusive, component-to-expand-id will be used by default.');
+    }
+
+    // Muestra un mensaje error cuando el atributo de input expand-trigger-id venga con algun valor distinto de null
+    if (this.getAttribute('expand-trigger-id') == null && this.getAttribute('expand-trigger-class') == null) {
+      console.error('ERROR: Property expand-trigger has not been initialized correctly.');
+      return false;
+    }
+    // Muestra un mensaje advertencia e ignora el atributo de input expand-trigger-class cuando los atributos de input expand-trigger-id y expand-trigger-class vengan los dos con valor
+    else if (this.getAttribute('expand-trigger-id') != null && this.getAttribute('expand-trigger-class') != null) {
+      console.warn('WARNING: Property expand-trigger-id and expand-trigger-class are mutually exclusive, expand-trigger-id will be used by default.');
+    }
+
+    // Muestra un mensaje advertencia e ignora el atributo de input custom-width cuando el atributo de input inherit-parent-width es 'true' o no viene (su valor por defecto es 'true')
+    if (this.getAttribute('custom-width') != null && (this.getAttribute('inherit-parent-width') == null || (this.getAttribute('inherit-parent-width') != null && this.getAttribute('inherit-parent-width').toLowerCase() === 'true'))) {
+      console.warn('WARNING: Property inherit-parent-width == true and custom-width are mutually exclusive, custom-width will be ignored. Use inherit-parent-width == false to enforce custom-width.');
+    }
+
+    // Muestra un mensaje advertencia e ignora el atributo de input custom-height cuando el atributo de input inherit-parent-height es 'true' o no viene (su valor por defecto es 'true')
+    if (this.getAttribute('custom-height') != null && (this.getAttribute('inherit-parent-height') == null || (this.getAttribute('inherit-parent-height') != null && this.getAttribute('inherit-parent-height').toLowerCase() === 'true'))) {
+      console.warn('WARNING: Property inherit-parent-height == true and custom-height are mutually exclusive, custom-height will be ignored. Use inherit-parent-height == false to enforce custom-height.');
+    }
+
+    return true;
+  }
+
+  /**
    * Método asíncrono que espera a que se resuelva la promesa (loadTemplatePromise) que obliga a esperar a que cargen los templates antes de que se creen y modifiquen los atributos del DOM.
    * 
    * Al terminar la promesa llama a los métodos para crear el expansion-overlay y establecer su ubicación.
    */
   async manageExpansionOverlay() {
     await this.loadTemplatePromise;
+
+    // Comprueba si existen los parámetros para crear el elemento overlayContainer y si ya ha sido creado anteriormente.
+    if (document.getElementById('overlayContainer') != null || !this.manageAttributeAvailability()) {
+      return;
+    }
 
     this.createOverlay();
     this.updateHorizontalAlign();
