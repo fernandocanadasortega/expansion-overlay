@@ -1,8 +1,3 @@
-<!-- ORIGINAL README TEMPLATE -- https://github.com/othneildrew/Best-README-Template --> 
-
-<!-- Enlace que dirige al readme en español -->
-<a id="readme-spanish"></a>
-
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -39,7 +34,7 @@
   <p align="center">
     Custom web component de JavaScript nativo que despliega un overlay que se expande desde un punto en específico.
     <br />
-    <a href="#readme-spanish"><strong>Go to english docs »</strong></a>
+    <a href="README_EN.md"><strong>Go to english docs »</strong></a>
     <br />
     <br />
     <a href="https://www.npmjs.com/package/expansion-overlay">Página de NPM</a>
