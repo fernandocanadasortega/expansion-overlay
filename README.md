@@ -133,7 +133,7 @@ Es el elemento desde donde se desplegará el expansion-overlay, puede ser cualqu
 Hay dos maneras de enviar el parámetro expandFromItem, **expand-from-item-id** y **expand-from-item-class**, dependiendo si vas a enviar un **#ID** o un **.class**.
 
 > Los parámetros **expand-from-item-id** y **expand-from-item-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-from-item-id** será usado por defecto.
-
+>
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 
 ### Parámetro expandTrigger
@@ -142,7 +142,7 @@ Es el elemento que provoca la expansión y/o el cierre del expansion-overlay, pu
 Hay dos maneras de enviar el parámetro expandTrigger, **expand-trigger-id** y **expand-trigger-class**, dependiendo si vas a enviar un **#ID** o un **.class**.
 
 > Los parámetros **expand-trigger-id** y **expand-trigger-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-trigger-id** será usado por defecto.
-
+>
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 
 ### Parámetro componentToExpand
@@ -152,8 +152,10 @@ Este elemento se puede ubicar en cualquier parte del DOM, **no es necesario que 
 
 Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand-id** y **component-to-expand-class**, dependiendo si vas a enviar un **#ID** o un **.class**.
 
-> Los parámetros **component-to-expand-id** y **component-to-expand-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **component-to-expand-id** será usado por defecto.
+> El HTMLElement al que referencia componentToExpand no puede ser *display: none*, debido a que no se pueden obtener las dimensiones de un elemento con *display: none*.
 
+> Los parámetros **component-to-expand-id** y **component-to-expand-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **component-to-expand-id** será usado por defecto.
+>
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 
 <br />
@@ -169,7 +171,7 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 | expand-from-item-class | string | Valor del .class del HTMLElement | ✅                    | null              |
 
 > Los parámetros **expand-from-item-id** y **expand-from-item-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-from-item-id** será usado por defecto.
-
+>
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
@@ -180,8 +182,11 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 | component-to-expand-id    | string | Valor del #ID del HTMLElement    | ✅                    | null              |
 | component-to-expand-class | string | Valor del .class del HTMLElement | ✅                    | null              |
 
-> Los parámetros **component-to-expand-id** y **component-to-expand-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **component-to-expand-id** será usado por defecto.
 
+> El HTMLElement al que referencia componentToExpand no puede ser *display: none*, debido a que no se pueden obtener las dimensiones de un elemento con *display: none*.
+
+> Los parámetros **component-to-expand-id** y **component-to-expand-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **component-to-expand-id** será usado por defecto.
+>
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
@@ -193,7 +198,7 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 | expand-trigger-class | string | Valor del .class del HTMLElement | ✅                    | null              |
 
 > Los parámetros **expand-trigger-id** y **expand-trigger-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-trigger-id** será usado por defecto.
-
+>
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
