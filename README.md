@@ -241,6 +241,8 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 | expand-from-item-hide-round-border | boolean | Indica si el expansion-overlay ocultará el border-radius de expandFromItem al desplegarse | ❎                    | false             |                       |
 
 > Al ocultar el backdrop es posible interactuar con el resto de la aplicación cuando el expansion-overlay aún está desplegado. Al hacer click en el backdrop se cerrará automaticamente el expansion-overlay.
+>
+> El z-index del backdrop es 1000, para colocar cosas por encima del backdrop utilizar z-index mayor o igual a 101.
 
 > Al activar **expand-from-item-hide-round-border** se ocultará el border-radius de expandFromItem al desplegarse, es solo un cambio estético para que no se vea un borde redondeado y luego el expansion-overlay. El valor del border-radius de expandFromItem se aplicará al expansion-overlay.
 
