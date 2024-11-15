@@ -161,19 +161,19 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 <!-- Available parameters -->
 ## Available parameters
 
-#### Definición del elemento desde donde se desplegará el expansion-overlay.
+#### Element from which the expansion-overlay will be displayed.
   
-| Parámetros             | Tipo   | Descripción                      | ¿Parámetro requerido? | Valor por defecto |
+| Parameters             | Type   | Description                      | ¿Parameter required?  | Default value     |
 | ---------------------- | ------ | -------------------------------- | --------------------- | ----------------- |
-| expand-from-item-id    | string | Valor del #ID del HTMLElement    | ✅                    | null              |
-| expand-from-item-class | string | Valor del .class del HTMLElement | ✅                    | null              |
+| expand-from-item-id    | string | #ID value of HTMLElement         | ✅                    | null              |
+| expand-from-item-class | string | .class value of HTMLElement      | ✅                    | null              |
 
 > Los parámetros **expand-from-item-id** y **expand-from-item-class** son mutuamente excluyentes, en caso de recibir los dos parámetros **expand-from-item-id** será usado por defecto.
 
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
-#### Definición del elemento que se introducirá en el expansion-overlay, el elemento que tendrá la animación de despliegue.
+#### Element to be inserted into the expansion overlay, the element that will have the expansion animation.
   
 | Parámetros                | Tipo   | Descripción                      | ¿Parámetro requerido? | Valor por defecto |
 | ------------------------- | ------ | -------------------------------- | --------------------- | ----------------- |
@@ -185,7 +185,7 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
-#### Definición del elemento que activa la expansión. *Normalmente es un botón*, pero se le puede asignar a cualquier elemento que soporte <code>addEventListener click</code>.
+#### Definition of the element that triggers the expansion. *Usually a button*, but it can be assigned to any element that supports <code>addEventListener click</code>.
   
 | Parámetros           | Tipo   | Descripción                      | ¿Parámetro requerido? | Valor por defecto |
 | -------------------- | ------ | -------------------------------- | --------------------- | ----------------- |
@@ -197,7 +197,7 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 > No puedes enviar el parámetro expandFromItem mediante **.class** si existe más de una clase con ese nombre en el DOM.
 <br />
 
-#### Alineaciones del componente
+#### Component alignments
   
 | Parámetros             | Tipo    | Descripción                                                   | ¿Parámetro requerido? | Valor por defecto | Opciones válidas      |
 | ---------------------- | ------- | ------------------------------------------------------------- | --------------------- | ----------------- | --------------------- |
@@ -213,7 +213,7 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 > Si se fuerza la alineación, *tanto horizontal como vertical*, se ignorará la función que cambia la alineación del expansion-overlay de forma automática cuando no hay espacio suficiente.
 <br />
 
-#### Tamaño del componente
+#### Component size
   
 | Parámetros            | Tipo    | Descripción                                                                         | ¿Parámetro requerido? | Valor por defecto | Opciones válidas            |
 | --------------------- | ------- | ----------------------------------------------------------------------------------- | --------------------- | ----------------- | --------------------------- |
@@ -227,7 +227,7 @@ Hay dos maneras de enviar el parámetro componentToExpand, **component-to-expand
 > Los parámetros **inherit-parent-height** y **custom-height** son mutuamente excluyentes, en caso de recibir los dos parámetros o si solo se recibe **custom-height** pero **inherit-parent-height=true** por defecto, **inherit-parent-height** será usado por defecto.
 <br />
 
-#### Otros parámetros
+#### Other parameters
   
 | Parámetros                         | Tipo    | Descripción                                                                               | ¿Parámetro requerido? | Valor por defecto | Opciones válidas      |
 | ---------------------------------- | ------- | ----------------------------------------------------------------------------------------- | --------------------- | ----------------- | --------------------- |
