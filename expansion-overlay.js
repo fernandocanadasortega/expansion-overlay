@@ -2,14 +2,14 @@ class ExpansionOverlay extends HTMLElement {
 
   /** Una promesa que obliga a esperar a que cargen los templates antes de que se creen y modifiquen los atributos del DOM */
   loadTemplatePromise;
+  /** HTMLElement. Elemento que aparecerá en el expansion-overlay con la animación de despliegue. */
+  componentToExpand = null;
 
   /**
    * VALORES POR DEFECTO DE LOS INPUTS DEL COMPONENTE (NO SE UTILIZAN EN EL CÓDIGO, SOLO SIRVEN COMO READONLY)
    */
   /** Tipo string. Id de HTMLElement. Id del item desde donde se despliega el expansion-overlay. */
   expandFromItem = null;
-  /** Tipo string. Id de HTMLElement. Id del item que aparecerá en el expansion-overlay. */
-  componentToExpand = null;
   /** Tipo string. Id de HTMLElement. Id del item que causa la expansión, suele ser un botón. A este HTMLElement se le añade un addEventListener 'click'. */
   expandTrigger = null;
   /** Tipo boolean. Opciones posibles: 'true' | 'false' (default). Indica si expansion-overlay ocultará el border-radius del elemento expandFromItem cuando se despliegue, es solo un cambio estético para que no se vea un borde redondeado y luego el expansion-overlay. */
@@ -53,8 +53,16 @@ class ExpansionOverlay extends HTMLElement {
    * @param {any} loadTemplateResolve Parámetro resolve que termina la promesa que obliga a esperar a que cargen los templates antes de que se creen y modifiquen los atributos del DOM.
    */
   async loadTemplates(loadTemplateResolve) {
-    // Adjuntar el contenido del template de HTML al Shadow DOM
-    this.shadowRoot.appendChild(this.loadHTMLTemplate().cloneNode(true));
+    /*
+    * Slot hace visible dentro del shadowRoot elementos que se añaden al componente, pero desde fuera del shadowRoot
+    * Ejemplo: <expansion-overlay><div>Prueba</div></expansion-overlay> -- Para poder visualizar el div prueba desde el shadowRoot se utiliza slot
+    */
+    this.shadowRoot.innerHTML = `
+      <slot></slot>
+      <div id="backdrop"></div>
+    `;
+    // TODO - probar con el backdrop aqui, si no, poner en el body de la aplicacion
+
     // Adjuntar el contenido del template de CSS al Shadow DOM
     this.shadowRoot.appendChild(this.loadCSSTemplate());
 
@@ -62,25 +70,11 @@ class ExpansionOverlay extends HTMLElement {
   }
 
   /**
-   * Carga el archivo con el template HTML.
-   * @returns {DocumentFragment} Devuelve el DOM del archivo HTML.
-   */
-  loadHTMLTemplate() {
-    const templateText = '<div id="backdrop"></div>';
-
-    // Crear un elemento <template> para agregar el archivo HTML y adjuntarlo al Shadow DOM
-    const template = document.createElement('template');
-    template.innerHTML = templateText;
-
-    return template.content;
-  }
-
-  /**
    * Carga el archivo con el template CSS.
    * @returns {HTMLStyleElement} Devuelve un objeto que contiene el <style> del archivo CSS.
    */
   loadCSSTemplate() {
-    const cssContent = '#backdrop { width: 100vw; height: 100vh; position: absolute; top: 0px; left: 0px; z-index: 1000; background-color: #121212; /* --ion-background-color */ opacity: 0; visibility: hidden; transition: opacity 0.25s linear, visibility 0.25s linear; } #backdrop.activated { /* opacity: 0.32; */ opacity: 0.52; visibility: visible; }';
+    const cssContent = `#backdrop${this.overlayContainerId} { width: 100vw; height: 100vh; position: absolute; top: 0px; left: 0px; z-index: 1000; background-color: #121212; /* --ion-background-color */ opacity: 0; visibility: hidden; transition: opacity 0.25s linear, visibility 0.25s linear; } #backdrop${this.overlayContainerId}.activated { /* opacity: 0.32; */ opacity: 0.52; visibility: visible; }`;
 
     // Crear un elemento <style> para agregar el archivo CSS y adjuntarlo al Shadow DOM
     const styleElement = document.createElement('style');
@@ -89,6 +83,7 @@ class ExpansionOverlay extends HTMLElement {
     return styleElement;
   }
 
+  //#region Ciclo de vida del custom web component
   /**
    * Ciclo de vida del webcomponent. Se ejecuta al crearse el webcomponent y otra vez cuando se cargan por primera vez todos los atributos del attributeChangedCallback.
    */
@@ -110,7 +105,7 @@ class ExpansionOverlay extends HTMLElement {
    * Ciclo de vida del webcomponent. Es el método que crea el observable, aquí se determina que atributos (@Input) tendrá el webcomponent.
    */
   static get observedAttributes() {
-    return ['expand-from-item-id', 'expand-from-item-class', 'component-to-expand-id', 'component-to-expand-class', 'expand-trigger-id', 'expand-trigger-class', 'expand-from-item-hide-round-border', 'horizontal-align', 'force-horizontal-align', 'vertical-align', 'force-vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height', 'animation-duration', 'show-backdrop'];
+    return ['expand-from-item-id', 'expand-from-item-class', 'expand-trigger-id', 'expand-trigger-class', 'expand-from-item-hide-round-border', 'horizontal-align', 'force-horizontal-align', 'vertical-align', 'force-vertical-align', 'inherit-parent-width', 'custom-width', 'inherit-parent-height', 'custom-height', 'animation-duration', 'show-backdrop'];
   }
 
   /**
@@ -134,7 +129,9 @@ class ExpansionOverlay extends HTMLElement {
       return;
     }
   }
+  //#endregion
 
+  //#region Getters
   /**
    * Busca en el DOM el objeto HTMLElement por el #ID o .Class propocionado en el atributo expand-from-item.
    * Si encuentra más de un objeto HTMLElement al buscar por .Class devuelve un error.
@@ -170,43 +167,6 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     return expandFromItem;
-  }
-
-  /**
-   * Busca en el DOM el objeto HTMLElement por el #ID o .Class propocionado en el atributo component-to-expand.
-   * Si encuentra más de un objeto HTMLElement al buscar por .Class devuelve un error.
-   * @returns {Element | null} Devuelve el objeto HTMLElement del atributo component-to-expand.
-   */
-  getComponentToExpand() {
-    let componentToExpand = null;
-
-    // Obtenemos el elemento mediante ID
-    if (this.getAttribute('component-to-expand-id')) {
-      componentToExpand = document.getElementById(this.getAttribute('component-to-expand-id'));
-      // No se ha encontrado HTMLElement
-      if (componentToExpand == null) {
-        console.error(`ERROR: Could not find HTMLElement with ID ${this.getAttribute('component-to-expand-id')}`);
-        return null;
-      }
-    }
-
-    // Obtenemos el elemento mediante clase
-    else if (this.getAttribute('component-to-expand-class')) {
-      componentToExpand = document.getElementsByClassName(this.getAttribute('component-to-expand-class'));
-      // No se ha encontrado HTMLElement
-      if (componentToExpand == null || componentToExpand.length == 0) {
-        console.error(`ERROR: Could not find HTMLElement with class name ${this.getAttribute('component-to-expand-class')}`);
-        return null;
-      }
-      // Se ha encontrado más de un HTMLElement
-      if (componentToExpand.length > 1) {
-        console.error(`ERROR: Found more than one HTMLElement with class name ${this.getAttribute('component-to-expand-class')}. Be more especific.`);
-        return null;
-      }
-      componentToExpand = componentToExpand.item(0);
-    }
-
-    return componentToExpand;
   }
 
   /**
@@ -247,32 +207,76 @@ class ExpansionOverlay extends HTMLElement {
   }
 
   /**
-   * Establece el valor del atributo de input custom-width como el width del expansion-overlay, siempre que el atributo de input inherit-parent-width venga a false.
-   * @returns {string | number} Valor de width que debe tener el expansion-overlay
+   * Busca en el DOM del shadowRoot el objeto HTMLElement overlayContainer.
+   * @returns {HTMLElement | null} Devuelve el objeto HTMLElement overlayContainer del shadowRoot.
+   */
+  getOverlayContainer() {
+    return this.shadowRoot.getElementById('overlayContainer');
+  }
+
+  /**
+   * Obtiene el width total del elemento ExpandFromItem (incluido paddings)
+   * @returns {number} Valor de width que debe tener el expansion-overlay
+   */
+  getExpandFromItemWidth() {
+    // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
+    const computedStyle = window.getComputedStyle(this.getExpandFromItem()); // shadowRoot en sí no tiene el método getComputedStyle. Este método pertenece al objeto global window y se utiliza para obtener los estilos calculados de un elemento DOM, independientemente de si está dentro de un shadowRoot o no.
+    return parseFloat(computedStyle.width) + parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight) + parseFloat(computedStyle.borderLeft) + parseFloat(computedStyle.borderRight);
+  }
+
+  /**
+   * Obtiene el height total del elemento ExpandFromItem (incluido paddings)
+   * @returns {number} Valor de height que debe tener el expansion-overlay
+   */
+  getExpandFromItemHeight() {
+    // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
+    const computedStyle = window.getComputedStyle(this.getExpandFromItem()); // shadowRoot en sí no tiene el método getComputedStyle. Este método pertenece al objeto global window y se utiliza para obtener los estilos calculados de un elemento DOM, independientemente de si está dentro de un shadowRoot o no.
+    return parseFloat(computedStyle.height) + parseFloat(computedStyle.paddingTop) + parseFloat(computedStyle.paddingBottom) + parseFloat(computedStyle.borderTop) + parseFloat(computedStyle.borderBottom);
+  }
+
+  /**
+   * Obtiene el width total del elemento ComponentToExpand (incluido paddings) siempre que el atributo inherit-parent-width no venga (valor por defecto: true) o venga a true. En caso contrario establece el valor del atributo custom-width como el width del expansion-overlay.
+   * @returns {number} Valor de width que debe tener el expansion-overlay
    */
   getComponentToExpandWidth() {
     // Existe un customWidth y inheritParentWidth viene a falso
     if (this.getAttribute('custom-width') != null && this.getAttribute('inherit-parent-width') != null && this.getAttribute('inherit-parent-width').toLowerCase() === 'false') {
-      return this.getAttribute('custom-width');
+      return +this.getAttribute('custom-width');
     }
 
-    const originalElement = this.getComponentToExpand(); // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
-    return originalElement.getBoundingClientRect().width;
+    // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
+    const computedStyle = window.getComputedStyle(this.componentToExpand); // shadowRoot en sí no tiene el método getComputedStyle. Este método pertenece al objeto global window y se utiliza para obtener los estilos calculados de un elemento DOM, independientemente de si está dentro de un shadowRoot o no.
+    return parseFloat(computedStyle.width) + parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight) + parseFloat(computedStyle.borderLeft) + parseFloat(computedStyle.borderRight);
   }
 
   /**
-   * Establece el valor del atributo de input custom-height como el height del expansion-overlay, siempre que el atributo de input inherit-parent-height venga a false.
-   * @returns {string | number} Valor de height que debe tener el expansion-overlay
+   * Obtiene el height total del elemento ComponentToExpand (incluido paddings) siempre que el atributo inherit-parent-height no venga (valor por defecto: true) o venga a true. En caso contrario establece el valor del atributo custom-height como el height del expansion-overlay.
+   * @returns {number} Valor de height que debe tener el expansion-overlay
    */
   getComponentToExpandHeight() {
     // Existe un customHeight y inheritParentHeight viene a falso
     if (this.getAttribute('custom-height') != null && this.getAttribute('inherit-parent-height') != null && this.getAttribute('inherit-parent-height').toLowerCase() === 'false') {
-      return this.getAttribute('custom-height');
+      return +this.getAttribute('custom-height');
     }
 
-    const originalElement = this.getComponentToExpand(); // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
-    return originalElement.getBoundingClientRect().height;
+    // El componente debe existir aquí obligatoriamente o el código no podría llegar a esta línea
+    const computedStyle = window.getComputedStyle(this.componentToExpand); // shadowRoot en sí no tiene el método getComputedStyle. Este método pertenece al objeto global window y se utiliza para obtener los estilos calculados de un elemento DOM, independientemente de si está dentro de un shadowRoot o no.
+    return parseFloat(computedStyle.height) + parseFloat(computedStyle.paddingTop) + parseFloat(computedStyle.paddingBottom) + parseFloat(computedStyle.borderTop) + parseFloat(computedStyle.borderBottom);
   }
+
+  /**
+   * 
+   * @returns {Promise<number>}
+   */
+  async getScrollPosition() {
+    // Acceder al ion-content y obtener el elemento de desplazamiento
+    const ionContent = document.querySelector('ion-content');
+    const scrollElement = await ionContent.getScrollElement();
+    
+    // Obtener la posición actual del scroll
+    return scrollElement.scrollTop;
+  }
+  //#endregion
 
   /**
    * Comprueba que parámetros han sido recibidos.
@@ -287,16 +291,6 @@ class ExpansionOverlay extends HTMLElement {
     // Muestra un mensaje advertencia e ignora el atributo de input expand-from-item-class cuando los atributos de input expand-from-item-id y expand-from-item-class vengan los dos con valor
     else if (this.getAttribute('expand-from-item-id') != null && this.getAttribute('expand-from-item-class') != null) {
       console.warn('WARNING: Property expand-from-item-id and expand-from-item-class are mutually exclusive, expand-from-item-id will be used by default.');
-    }
-
-    // Muestra un mensaje error cuando el atributo de input component-to-expand-id venga con algun valor distinto de null
-    if (this.getAttribute('component-to-expand-id') == null && this.getAttribute('component-to-expand-class') == null) {
-      console.error('ERROR: Property component-to-expand has not been initialized correctly.');
-      return false;
-    }
-    // Muestra un mensaje advertencia e ignora el atributo de input component-to-expand-class cuando los atributos de input component-to-expand-id y component-to-expand-class vengan los dos con valor
-    else if (this.getAttribute('component-to-expand-id') != null && this.getAttribute('component-to-expand-class') != null) {
-      console.warn('WARNING: Property component-to-expand-id and component-to-expand-class are mutually exclusive, component-to-expand-id will be used by default.');
     }
 
     // Muestra un mensaje error cuando el atributo de input expand-trigger-id venga con algun valor distinto de null
@@ -330,14 +324,17 @@ class ExpansionOverlay extends HTMLElement {
   async manageExpansionOverlay() {
     await this.loadTemplatePromise;
 
-    // Comprueba si existen los parámetros para crear el elemento overlayContainer y si ya ha sido creado anteriormente.
-    if (document.getElementById('overlayContainer') != null || !this.manageAttributeAvailability()) {
+    // Comprueba si existen los parámetros para crear el elemento overlayContainer.
+    if (!this.manageAttributeAvailability()) {
       return;
     }
 
-    this.createOverlay();
-    this.updateHorizontalAlign();
-    this.updateVerticalAlign();
+    // Comprueba si el elemento overlayContainer ya ha sido creado anteriormente
+    const overlayContainer = this.getOverlayContainer();
+    if (overlayContainer == null) {
+      this.createOverlay();
+      this.overlayVisibilityListeners();
+    }
   }
 
   /**
@@ -348,8 +345,11 @@ class ExpansionOverlay extends HTMLElement {
    * @returns {void} El return solo existe para salir del método cuando no se encuentra el componente del atributo component-to-expand en el DOM.
    */
   createOverlay() {
-    const originalElement = this.getComponentToExpand(); // Obtenemos el elemento al que le vamos a crear el padre
-    if (originalElement == null) {
+    const slot = this.shadowRoot.querySelector('slot');
+    const assignedNodes = slot.assignedNodes({ flatten: true });
+    this.componentToExpand = assignedNodes.find((node) => node.nodeType === Node.ELEMENT_NODE && node.tagName === 'DIV'); // Obtenemos el elemento al que le vamos a crear el padre
+    if (this.componentToExpand == null) {
+      console.warn('Element to expand not found');
       return;
     }
 
@@ -365,13 +365,8 @@ class ExpansionOverlay extends HTMLElement {
     newParent.style.height = `${this.getComponentToExpandHeight()}px`;
     newParent.style.transition = `max-height ${this.getAttribute('animation-duration') ?? this.animationDuration} ease-out`; // Animación responsable del colapso y despliegue del componente
 
-    const originalElementParent = originalElement.parentNode; // Accedemos al padre original del elemento al que le vamos a crear el padre
-    // set the wrapper as child (instead of the element) (Basicamente eliminamos el elemento original y lo sustitumos por el que va a ser su padre)
-    originalElementParent.replaceChild(newParent, originalElement); // Sustituimos el elemento original por nuestro elemento padre recién creado
-    // set element as child of wrapper
-    newParent.appendChild(originalElement); // A nuestro elemento padre le añadimos el elemento original como hijo
-
-    this.manageVisibility();
+    newParent.appendChild(this.componentToExpand); // A nuestro elemento wrapper le añadimos el elemento original como hijo
+    this.shadowRoot.appendChild(newParent); // Añadimos el wrapper al shadowRoot
   }
 
   /**
@@ -380,12 +375,22 @@ class ExpansionOverlay extends HTMLElement {
    * El backdrop puede ser desactivado, al desactivarse el componente solo puede colapsarse de nuevo al hacer click en el botón asociado al atributo expand-trigger.
    * @returns {void} El return solo existe para salir del método cuando no se encuentra el componente del atributo expand-trigger en el DOM.
    */
-  manageVisibility() {
+  overlayVisibilityListeners() {
     if (this.getExpandTrigger() == null) {
       return;
     }
 
-    const backdrop = document.querySelector("expansion-overlay").shadowRoot.getElementById('backdrop'); // Buscamos en expansion-overlay (el html propio del componente) para obtener el DOM de este propio componente
+    const overlayContainer = this.getOverlayContainer();
+    // El usuario hace click en el botón del componente externo asociado al atributo expand-trigger.
+    this.getExpandTrigger().addEventListener('click', () => {
+      const showOverlay = overlayContainer.style.maxHeight == '0px' ? true : false; // Indica si el overlay se va a mostrar o a ocultar
+      this.updateHorizontalAlign(showOverlay);
+      this.updateVerticalAlign(showOverlay);
+      overlayContainer.style.maxHeight = showOverlay ? `${this.getComponentToExpandHeight()}px` : '0px';
+    });
+    return;
+    // let overlayContainer = this.getOverlayContainer();
+    const backdrop = document.querySelector("expansion-overlay").shadowRoot.getElementById(`backdrop${this.overlayContainerId}`); // Buscamos en expansion-overlay (el html propio del componente) para obtener el DOM de este propio componente
     const showBackdrop = this.getAttribute('show-backdrop') ?? this.showBackdrop;
     // No está habilitado el backdrop, se procede a ocultar
     if ((typeof showBackdrop == "boolean" && !showBackdrop) || (typeof showBackdrop === 'string' && showBackdrop.toLowerCase() === 'false')) {
@@ -395,15 +400,13 @@ class ExpansionOverlay extends HTMLElement {
 
     // El usuario hace click en el backdrop
     backdrop.addEventListener('click', () => {
-      const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
-      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px';
+      overlayContainer.style.maxHeight = overlayContainer.style.maxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px';
       backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
     });
 
     // El usuario hace click en el botón del componente externo asociado al atributo expand-trigger.
     this.getExpandTrigger().addEventListener('click', () => {
-      const overlayMaxHeight = document.getElementById('overlayContainer').style.maxHeight;
-      document.getElementById('overlayContainer').style.maxHeight = overlayMaxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px';
+      overlayContainer.style.maxHeight = overlayContainer.style.maxHeight == '0px' ? `${this.getComponentToExpandHeight()}px` : '0px';
       backdrop.classList.toggle('activated'); // Muestra - oculta el backdrop
     });
   }
@@ -423,6 +426,7 @@ class ExpansionOverlay extends HTMLElement {
       return 0;
     }
 
+    let overlayContainer = this.getOverlayContainer();
     const verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
     const computedStyles = window.getComputedStyle(this.getExpandFromItem()); // El componente expandFromItem debe existir aquí obligatoriamente o el código no podría llegar a esta línea
 
@@ -430,8 +434,8 @@ class ExpansionOverlay extends HTMLElement {
     if (verticalAlign == 'top') {
       const borderTopLeftRadius = computedStyles.getPropertyValue('border-top-left-radius').replace('px', '');
       const borderTopRightRadius = computedStyles.getPropertyValue('border-top-right-radius').replace('px', '');
-      document.getElementById('overlayContainer').style.borderTopLeftRadius = `${borderTopLeftRadius}px`;
-      document.getElementById('overlayContainer').style.borderTopRightRadius = `${borderTopRightRadius}px`;
+      overlayContainer.style.borderTopLeftRadius = `${borderTopLeftRadius}px`;
+      overlayContainer.style.borderTopRightRadius = `${borderTopRightRadius}px`;
 
       // Si ocurre que un border-radius es mayor que el otro coger el de mayor valor. Se divide entre 2 porque el border-radius forma una curva, y solo una mitad (que es la mitad horizontal) sería visible.
       if (borderTopLeftRadius > borderTopRightRadius) {
@@ -449,8 +453,8 @@ class ExpansionOverlay extends HTMLElement {
     if (verticalAlign == 'bottom') {
       const borderBottomLeftRadius = computedStyles.getPropertyValue('border-bottom-left-radius').replace('px', '');
       const borderBottomRightRadius = computedStyles.getPropertyValue('border-bottom-right-radius').replace('px', '');
-      document.getElementById('overlayContainer').style.borderBottomLeftRadius = `${borderBottomLeftRadius}px`;
-      document.getElementById('overlayContainer').style.borderBottomRightRadius = `${borderBottomRightRadius}px`;
+      overlayContainer.style.borderBottomLeftRadius = `${borderBottomLeftRadius}px`;
+      overlayContainer.style.borderBottomRightRadius = `${borderBottomRightRadius}px`;
 
       // Si ocurre que un border-radius es mayor que el otro coger el de mayor valor. Se divide entre 2 porque el border-radius forma una curva, y solo una mitad (que es la mitad horizontal) sería visible.
       if (borderBottomLeftRadius > borderBottomRightRadius) {
@@ -476,14 +480,13 @@ class ExpansionOverlay extends HTMLElement {
    * Si el atributo force-horizontal-align viene a true se forzará la posición establecida en el atributo horizontal-align aunque no haya espacio suficiente.
    * @returns {void} El return solo existe para salir del método cuando no se encuentra el componente del atributo expand-from-item o del component-to-expand en el DOM.
    */
-  updateHorizontalAlign() {
-    let expandFromItem = this.getExpandFromItem();
-    if (expandFromItem == null) {
+  updateHorizontalAlign(showOverlay) {
+    if (!showOverlay) { // No se realizan actualizaciones de ubicación al cerrar el overlay
       return;
     }
 
-    let componentToExpand = this.getComponentToExpand();
-    if (componentToExpand == null) {
+    let expandFromItem = this.getExpandFromItem();
+    if (expandFromItem == null) {
       return;
     }
 
@@ -491,9 +494,10 @@ class ExpansionOverlay extends HTMLElement {
     const horizontalCalculations = {
       left: expandFromItem.getBoundingClientRect().left,
       right: window.innerWidth - expandFromItem.getBoundingClientRect().right,
-      middle: expandFromItem.getBoundingClientRect().left + ((expandFromItem.getBoundingClientRect().width / 2) - (componentToExpand.getBoundingClientRect().width / 2))
+      middle: expandFromItem.getBoundingClientRect().left + ((this.getExpandFromItemWidth() / 2) - (this.getComponentToExpandWidth() / 2))
     };
 
+    let overlayContainer = this.getOverlayContainer();
     let horizontalAlign = this.getAttribute('horizontal-align') ?? this.horizontalAlign;
     const forceHorizontalAlign = this.getAttribute('force-horizontal-align') ?? this.forceHorizontalAlign;
 
@@ -503,17 +507,20 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     if (horizontalAlign == 'left') {
-      document.getElementById('overlayContainer').style.left = `${horizontalCalculations.left}px`;
+      overlayContainer.style.left = `${horizontalCalculations.left}px`;
+      overlayContainer.style.right = 'unset';
       return;
     }
 
     if (horizontalAlign == 'right') {
-      document.getElementById('overlayContainer').style.right = `${horizontalCalculations.right}px`;
+      overlayContainer.style.left = 'unset';
+      overlayContainer.style.right = `${horizontalCalculations.right}px`;
       return;
     }
 
     if (horizontalAlign == 'middle') {
-      document.getElementById('overlayContainer').style.left = `${horizontalCalculations.middle}px`;
+      overlayContainer.style.left = `${horizontalCalculations.middle}px`;
+      overlayContainer.style.right = 'unset';
       return;
     }
   }
@@ -526,14 +533,9 @@ class ExpansionOverlay extends HTMLElement {
    * @returns {string} Valor definitivo del horizontalAlign tras hacer los cálculos.
    */
   checkHorizontalAlignAvailability(horizontalAlign, horizontalCalculations) {
-    let componentToExpand = this.getComponentToExpand();
-    if (componentToExpand == null) {
-      return this.horizontalAlign; // Failsafe return, nunca debería llegar a este return
-    }
-
     if (horizontalAlign == 'left') {
       // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
-      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + componentToExpand.getBoundingClientRect().width) >= 0)) {
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + this.getComponentToExpandWidth()) >= 0)) {
         return horizontalAlign; // El componente overlayContainer no sufre overflow, se muestra en el horizontal-align original
       }
 
@@ -554,7 +556,7 @@ class ExpansionOverlay extends HTMLElement {
 
     if (horizontalAlign == 'right') {
       // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
-      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + componentToExpand.getBoundingClientRect().width) >= 0)) {
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + this.getComponentToExpandWidth()) >= 0)) {
         return horizontalAlign;
       }
 
@@ -575,7 +577,7 @@ class ExpansionOverlay extends HTMLElement {
 
     if (horizontalAlign == 'middle') {
       // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
-      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + componentToExpand.getBoundingClientRect().width) >= 0)) {
+      if (horizontalCalculations[horizontalAlign] >= 0 && (window.innerWidth - (horizontalCalculations[horizontalAlign] + this.getComponentToExpandWidth()) >= 0)) {
         return horizontalAlign;
       }
 
@@ -602,38 +604,47 @@ class ExpansionOverlay extends HTMLElement {
    * Si el componente overlayContainer sufre overflow se realizan cálculos para comprobar que vertical-align sufre menos overflow.
    * 
    * Si el atributo force-vertical-align viene a true se forzará la posición establecida en el atributo vertical-align aunque no haya espacio suficiente.
+   * @param {boolean} showOverlay 
    * @returns {void} El return solo existe para salir del método cuando no se encuentra el componente del atributo expand-from-item en el DOM.
    */
-  updateVerticalAlign() {
+  async updateVerticalAlign(showOverlay) {
+    if (!showOverlay) { // No se realizan actualizaciones de ubicación al cerrar el overlay
+      return;
+    }
+
     let expandFromItem = this.getExpandFromItem();
     if (expandFromItem == null) {
       return;
     }
 
+    let overlayContainer = this.getOverlayContainer();
     // Calculos del expansion-overlay en las diferentes posiciones posibles de verticalAlign
     const verticalCalculations = {
-      top: window.innerHeight - expandFromItem.getBoundingClientRect().top,
-      bottom: expandFromItem.getBoundingClientRect().bottom
+      top: window.innerHeight - expandFromItem.offsetTop,
+      bottom: expandFromItem.offsetTop + parseFloat(window.getComputedStyle(this.getExpandFromItem()).height)
     };
 
-    const borderRadiusValue = this.updateRoundBorder(); // Obtiene los px que se deben eliminar del cálculo de posición vertical para que no aparezca el border-radius del componente expandFromItem
     let verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
+    const borderRadiusValue = this.updateRoundBorder(); // Obtiene los px que se deben eliminar del cálculo de posición vertical para que no aparezca el border-radius del componente expandFromItem
     const forceVerticalAlign = this.getAttribute('force-vertical-align') ?? this.forceVerticalAlign;
 
     // Si se fuerza la posición de verticalAlign, no se realizarán los cálculos para cambiar el verticalAlign aunque no haya espacio suficiente
+    // Solo se hace la comprobación al abrirse el overlay
     if ((typeof forceVerticalAlign == "boolean" && !forceVerticalAlign) || (typeof forceVerticalAlign === 'string' && forceVerticalAlign.toLowerCase() === 'false')) {
-      verticalAlign = this.checkVerticalAlignAvailability(verticalAlign, verticalCalculations); // Se realizan los cálculos para ver si el componente overlayContainer se saldrá de la pantalla por overflow 
+      verticalAlign = await this.checkVerticalAlignAvailability(verticalAlign, verticalCalculations); // Se realizan los cálculos para ver si el componente overlayContainer se saldrá de la pantalla por overflow 
     }
 
     // El expansion-overlay sale por encima del componente, la animación de expansión es desde abajo hacia arriba.
     if (verticalAlign == 'top') {
-      document.getElementById('overlayContainer').style.bottom = `${verticalCalculations.top - borderRadiusValue}px`;
+      overlayContainer.style.top = 'unset';
+      overlayContainer.style.bottom = `${verticalCalculations.top - borderRadiusValue}px`;
       return;
     }
 
     // El expansion-overlay sale por debajo del componente, la animación de expansión es desde arriba hacia abajo.
     if (verticalAlign == 'bottom') {
-      document.getElementById('overlayContainer').style.top = `${verticalCalculations.bottom - borderRadiusValue}px`;
+      overlayContainer.style.top = `${verticalCalculations.bottom - borderRadiusValue}px`;
+      overlayContainer.style.bottom = 'unset';
       return;
     }
   }
@@ -645,15 +656,13 @@ class ExpansionOverlay extends HTMLElement {
    * @param {*} verticalCalculations Calculos del expansion-overlay en las diferentes posiciones posibles de verticalAlign.
    * @returns {string} Valor definitivo del verticalAlign tras hacer los cálculos.
    */
-  checkVerticalAlignAvailability(verticalAlign, verticalCalculations) {
-    let componentToExpand = this.getComponentToExpand();
-    if (componentToExpand == null) {
-      return this.verticalAlign; // Failsafe return, nunca debería llegar a este return
-    }
+  async checkVerticalAlignAvailability(verticalAlign, verticalCalculations) {
+    const scrollTop = await this.getScrollPosition();
 
     if (verticalAlign == 'top') {
-      // Si el overlayContainer está en left: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en left: 350px, pero el overlayContainer tiene un width de >50px, se sale de la pantalla.
-      if (verticalCalculations[verticalAlign] >= 0 && (window.innerHeight - (verticalCalculations[verticalAlign] + componentToExpand.getBoundingClientRect().height) >= 0)) {
+      // Si el overlayContainer está en bottom: -50px (es decir que está fuera de la pantalla). Y si la pantalla es de 400px y el overlayContainer está en bottom: 350px, pero el overlayContainer tiene un height de >50px, se sale de la pantalla.
+      // Para hacer una comprobación correcta se debe calcular (el tamaño de la pantalla + cuanto se ha hecho de scroll hasta ese momento) - (ubicación de ExpandFromItem + altura de ComponentToExpand)
+      if (verticalCalculations[verticalAlign] >= 0 && ((window.innerHeight + scrollTop) - (verticalCalculations[verticalAlign] + this.getComponentToExpandHeight()) >= 0)) {
         return verticalAlign; // El componente overlayContainer no sufre overflow, se muestra en el vertical-align original
       }
 
@@ -670,8 +679,9 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     if (verticalAlign == 'bottom') {
-      // Si el overlayContainer está en bottom: -50px está fuera de la pantalla Y si la pantalla es de 400px y el overlayContainer está en bottom: 350px, pero el overlayContainer tiene un height de >50px, se sale de la pantalla.
-      if (verticalCalculations[verticalAlign] >= 0 && (window.innerHeight - (verticalCalculations[verticalAlign] + componentToExpand.getBoundingClientRect().height) >= 0)) {
+      // Si el overlayContainer está en bottom: -50px (es decir que está fuera de la pantalla). Y si la pantalla es de 400px y el overlayContainer está en bottom: 350px, pero el overlayContainer tiene un height de >50px, se sale de la pantalla.
+      // Para hacer una comprobación correcta se debe calcular (el tamaño de la pantalla + cuanto se ha hecho de scroll hasta ese momento) - (ubicación de ExpandFromItem + altura de ComponentToExpand)
+      if (verticalCalculations[verticalAlign] >= 0 && ((window.innerHeight + scrollTop) - (verticalCalculations[verticalAlign] + this.getComponentToExpandHeight()) >= 0)) {
         return verticalAlign;
       }
 
