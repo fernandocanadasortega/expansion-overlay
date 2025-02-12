@@ -31,7 +31,7 @@ class ExpansionOverlay extends HTMLElement {
   /** Tipo string. Valores posibles: '350px' | '150em' | '50%' | '200vh'. Indica un height específico para el expansion-overlay (si el parametro inheritParentHeight está 'true' este parametro se ignora). */
   customHeight = '';
   /** Tipo string. Valores posibles: '0.25s' | '250ms'. Indica el tiempo de la animación de despliegue del expansion-overlay. */
-  animationDuration = '0.25s';
+  animationDuration = '1.5s';
   /** Tipo boolean. Opciones posibles: 'true' (default) | 'false'. Indica si el componente backdrop debe aparecer cuando se despliegue el expansion-overlay. */
   showBackdrop = true;
 
@@ -265,16 +265,16 @@ class ExpansionOverlay extends HTMLElement {
   }
 
   /**
-   * 
-   * @returns {Promise<number>}
+   * Devuelve el elemento scrollElement de ionContent.getScrollElement()
+   * @returns {Promise<any>} Elemento scrollElement del ionContent
    */
-  async getScrollPosition() {
+  async getScrollElement() {
     // Acceder al ion-content y obtener el elemento de desplazamiento
     const ionContent = document.querySelector('ion-content');
     const scrollElement = await ionContent.getScrollElement();
-    
+
     // Obtener la posición actual del scroll
-    return scrollElement.scrollTop;
+    return scrollElement;
   }
   //#endregion
 
@@ -381,8 +381,13 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     const overlayContainer = this.getOverlayContainer();
+    console.log('Activo addEventListener');
     // El usuario hace click en el botón del componente externo asociado al atributo expand-trigger.
+    // todo - al hacer dos click recibe 3???
+    let count = 0;
+
     this.getExpandTrigger().addEventListener('click', () => {
+      console.log('click recibido');
       const showOverlay = overlayContainer.style.maxHeight == '0px' ? true : false; // Indica si el overlay se va a mostrar o a ocultar
       this.updateHorizontalAlign(showOverlay);
       this.updateVerticalAlign(showOverlay);
@@ -618,10 +623,11 @@ class ExpansionOverlay extends HTMLElement {
     }
 
     let overlayContainer = this.getOverlayContainer();
+
     // Calculos del expansion-overlay en las diferentes posiciones posibles de verticalAlign
     const verticalCalculations = {
-      top: window.innerHeight - expandFromItem.offsetTop,
-      bottom: expandFromItem.offsetTop + parseFloat(window.getComputedStyle(this.getExpandFromItem()).height)
+      expandsFromBottomToTop: window.innerHeight - expandFromItem.offsetTop, // El expansion-overlay se sitúa por debajo del componente, la animación de expansión es desde arriba hacia abajo.
+      expandsFromTopToBottom: expandFromItem.offsetTop + parseFloat(window.getComputedStyle(this.getExpandFromItem()).height) // El expansion-overlay se sitúa por encima del componente, la animación de expansión es desde abajo hacia arriba.
     };
 
     let verticalAlign = this.getAttribute('vertical-align') ?? this.verticalAlign;
@@ -631,19 +637,19 @@ class ExpansionOverlay extends HTMLElement {
     // Si se fuerza la posición de verticalAlign, no se realizarán los cálculos para cambiar el verticalAlign aunque no haya espacio suficiente
     // Solo se hace la comprobación al abrirse el overlay
     if ((typeof forceVerticalAlign == "boolean" && !forceVerticalAlign) || (typeof forceVerticalAlign === 'string' && forceVerticalAlign.toLowerCase() === 'false')) {
-      verticalAlign = await this.checkVerticalAlignAvailability(verticalAlign, verticalCalculations); // Se realizan los cálculos para ver si el componente overlayContainer se saldrá de la pantalla por overflow 
+      verticalAlign = await this.checkVerticalAlignAvailability(verticalAlign); // Se realizan los cálculos para ver si el componente overlayContainer se saldrá de la pantalla por overflow 
     }
 
     // El expansion-overlay sale por encima del componente, la animación de expansión es desde abajo hacia arriba.
     if (verticalAlign == 'top') {
       overlayContainer.style.top = 'unset';
-      overlayContainer.style.bottom = `${verticalCalculations.top - borderRadiusValue}px`;
+      overlayContainer.style.bottom = `${verticalCalculations.expandsFromBottomToTop - borderRadiusValue}px`;
       return;
     }
 
     // El expansion-overlay sale por debajo del componente, la animación de expansión es desde arriba hacia abajo.
     if (verticalAlign == 'bottom') {
-      overlayContainer.style.top = `${verticalCalculations.bottom - borderRadiusValue}px`;
+      overlayContainer.style.top = `${verticalCalculations.expandsFromTopToBottom - borderRadiusValue}px`;
       overlayContainer.style.bottom = 'unset';
       return;
     }
@@ -656,45 +662,30 @@ class ExpansionOverlay extends HTMLElement {
    * @param {*} verticalCalculations Calculos del expansion-overlay en las diferentes posiciones posibles de verticalAlign.
    * @returns {string} Valor definitivo del verticalAlign tras hacer los cálculos.
    */
-  async checkVerticalAlignAvailability(verticalAlign, verticalCalculations) {
-    const scrollTop = await this.getScrollPosition();
-
-    if (verticalAlign == 'top') {
-      // Si el overlayContainer está en bottom: -50px (es decir que está fuera de la pantalla). Y si la pantalla es de 400px y el overlayContainer está en bottom: 350px, pero el overlayContainer tiene un height de >50px, se sale de la pantalla.
-      // Para hacer una comprobación correcta se debe calcular (el tamaño de la pantalla + cuanto se ha hecho de scroll hasta ese momento) - (ubicación de ExpandFromItem + altura de ComponentToExpand)
-      if (verticalCalculations[verticalAlign] >= 0 && ((window.innerHeight + scrollTop) - (verticalCalculations[verticalAlign] + this.getComponentToExpandHeight()) >= 0)) {
-        return verticalAlign; // El componente overlayContainer no sufre overflow, se muestra en el vertical-align original
-      }
-
-      // Comprueba que verticalAlign tiene más espacio disponible
-      const minCalculation = Math.min(Math.abs(verticalCalculations.top), Math.abs(verticalCalculations.bottom));
-      if (minCalculation === Math.abs(verticalCalculations.top)) {
-        return 'top';
-      }
-      if (minCalculation === Math.abs(verticalCalculations.bottom)) {
-        return 'bottom';
-      }
-
-      return 'top'; // Failsafe return, nunca debería llegar a este return
+  async checkVerticalAlignAvailability(verticalAlign) {
+    let expandFromItem = this.getExpandFromItem();
+    if (expandFromItem == null) {
+      return;
     }
 
-    if (verticalAlign == 'bottom') {
-      // Si el overlayContainer está en bottom: -50px (es decir que está fuera de la pantalla). Y si la pantalla es de 400px y el overlayContainer está en bottom: 350px, pero el overlayContainer tiene un height de >50px, se sale de la pantalla.
-      // Para hacer una comprobación correcta se debe calcular (el tamaño de la pantalla + cuanto se ha hecho de scroll hasta ese momento) - (ubicación de ExpandFromItem + altura de ComponentToExpand)
-      if (verticalCalculations[verticalAlign] >= 0 && ((window.innerHeight + scrollTop) - (verticalCalculations[verticalAlign] + this.getComponentToExpandHeight()) >= 0)) {
+    const scrollElement = await this.getScrollElement();
+
+    if (verticalAlign == 'top') {
+      // Si al realizar el cálculo de offsetTop - altura expansion-overlay el resultado es MAYOR que scrollY, el expansion-overlay NO se saldrá del viewport actual (tamaño de la pantalla)
+      if ((expandFromItem.offsetTop - this.getComponentToExpandHeight()) >= scrollElement.scrollTop) {
         return verticalAlign;
       }
 
-      // Comprueba que verticalAlign tiene más espacio disponible
-      const minCalculation = Math.min(Math.abs(verticalCalculations.top), Math.abs(verticalCalculations.bottom));
-      if (minCalculation === Math.abs(verticalCalculations.top)) {
-        return 'top';
-      }
-      if (minCalculation === Math.abs(verticalCalculations.bottom)) {
-        return 'bottom';
+      return 'bottom';
+    }
+
+    if (verticalAlign == 'bottom') {
+      // Si al realizar el cálculo de offsetTop + height + altura expansion-overlay el resultado es MENOR que scrollY + innerHeight, el expansion-overlay NO se saldrá del viewport actual (tamaño de la pantalla)
+      if ((scrollElement.scrollTop + window.innerHeight) >= (expandFromItem.offsetTop + parseFloat(window.getComputedStyle(this.getExpandFromItem()).height) + this.getComponentToExpandHeight())) {
+        return verticalAlign;
       }
 
-      return 'bottom'; // Failsafe return, nunca debería llegar a este return
+      return 'top';
     }
   }
 }
